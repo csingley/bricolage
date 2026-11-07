@@ -1,0 +1,86 @@
+/* The @define-color lines (waybar/default.nix) precede this file, one per color. The bar is
+   a solid bg fill, like foot, Neovim and sway; pills are surface, which stands out from bg by
+   about 1.5:1 in emerald. */
+
+/* Color semantics, one meaning each, so the bar can be scanned for what is "off":
+   warning    a state away from rest: live mic, muted speaker, keep-awake on (fills); the
+              performance profile (glyph); battery below its warning level and memory at 80%
+              (text). The mic rests muted, the speaker rests unmuted.
+   success    the eco direction (power-saver); benign.
+   error      errors only: critical battery or temperature, urgent workspace; memory at 90%.
+   Fills mark a toggle you flipped; a tinted glyph marks a mode.
+   Fill versus text: an amber or scarlet FILL (or flash) is a call to action: click to clear the
+   condition and return the bar to green (idle inhibitor, mic, muted speaker; battery and
+   temperature flash because they need attention now). Amber or scarlet TEXT or glyph reports a
+   variance from nominal and asks for nothing (power profile, memory). New widgets follow this
+   split. */
+
+* { font-family: "JetBrainsMono Nerd Font", monospace; font-size: 13px; font-weight: bold; }
+window#waybar { background: @bg; color: @fg; }
+/* Workspace buttons are pills like every other widget (same radius and margin), not a
+   square full-height block. */
+#workspaces button { min-width: __WORKSPACE_WIDTH__px; padding: 0 8px; color: @fg; border: none; box-shadow: none; border-radius: 8px; margin: 3px 2px; }
+/* Workspaces 1 to 4 are always shown: empty ones are dim, ones with windows are full text. */
+#workspaces button.empty { color: @fg_faint; }
+#workspaces button:hover { background: @surface; }
+#workspaces button.empty:hover { color: @fg; }
+#workspaces button.focused { background: @selection; color: @fg; }
+#workspaces button.urgent { background: @error; color: @bg; }
+#clock, #tray, #pulseaudio, #battery, #mode, #idle_inhibitor,
+#cpu, #memory, #backlight, #custom-power, #temperature,
+#power-profiles-daemon { padding: 0 10px; }
+/* Each group is one rounded pill, so the right side is three shapes instead of eight; the
+   widgets inside are bare (no fill of their own) until something is worth noticing: a hover,
+   a toggle you flipped, an error. The tray and the power button are single-widget pills.
+   (The clock stands alone in the center, so it gets none.) */
+#tray, #custom-power { background: @surface; border-radius: 8px; margin: 3px 2px; }
+/* On the left, 12px after the workspace buttons (2px of their margin + 10px). */
+#tray { margin-left: 10px; }
+#energy, #load, #controls { background: @surface; border-radius: 8px; margin: 3px 2px 3px 10px; padding: 0 2px; }
+#pulseaudio, #battery, #mode, #idle_inhibitor, #cpu, #memory, #backlight, #temperature,
+#power-profiles-daemon { border-radius: 8px; margin: 2px 0; }
+#mode { background: @surface; margin: 3px 2px; }
+/* Gaps between pills: G = 12px = 2px (the neighbor's margin) + 10px, here and on the group
+   pills above (their left margin). */
+#custom-power { margin-left: 10px; }
+/* The last segment is a quarter block in a ~4px pitch cell, leaving empty space on its
+   right, so take that off the right padding to center the bar in its pill. */
+#cpu { padding: 0 3px 0 10px; }
+#idle_inhibitor { min-width: 16px; margin-left: 6px; } /* same width in both states (see the coffee glyph note); the margin keeps the active fill off the power-profile glyph, which overflows its cell */
+#pulseaudio { min-width: 56px; } /* = widest live text (icon + "100%"); padding is added on top, so keep it tight */
+/* Hover affordance, only on pills that respond to input (temperature is read-only and
+   stays inert; cpu and memory open a system monitor). Neutral states only: the colored
+   states (live mic, muted speaker, keep-awake) keep their own look. */
+#battery:hover, #power-profiles-daemon:hover, #backlight:hover, #custom-power:hover,
+#cpu:hover, #memory:hover,
+#idle_inhibitor:not(.activated):hover, #pulseaudio:not(.mic):not(.muted):hover,
+#pulseaudio.mic.source-muted:hover { background: @selection; }
+/* The power button is plain like the other widgets and gets the shared hover highlight
+   above; error is reserved for errors (destructive actions are confirmed by swaynag). */
+menu { background: @bg; color: @fg; border: 1px solid @border; border-radius: 8px; padding: 4px; }
+menuitem { padding: 6px 14px; border-radius: 6px; }
+menuitem:hover { background: @selection; }
+#idle_inhibitor.activated { background: @warning; color: @bg; }
+/* Mic: muted is the normal state (plain pill); a live mic is the thing to notice, so it gets a
+   warning fill. */
+#pulseaudio.mic:not(.source-muted) { background: @warning; color: @bg; font-weight: bold; }
+/* An audio device out of its resting state is the thing to check when a call isn't working: a
+   live mic (rests muted, above) or a muted speaker (rests unmuted). Not error. */
+#pulseaudio.muted:not(.mic) { background: @warning; color: @bg; font-weight: bold; }
+#battery.warning { color: @warning; }
+/* Memory: color only, never flashing. High RAM use is normal for some workloads and the
+   machine has plenty of swap, so this is information, not an emergency. */
+#memory.warning { color: @warning; }
+#memory.critical { color: @error; }
+/* Error: flash the pill in the error color. Battery below its critical threshold and not
+   charging; temperature at or above its critical threshold (both set in default.nix). */
+@keyframes error-flash {
+  0% { background-color: transparent; color: @error; }
+  49% { background-color: transparent; color: @error; }
+  50% { background-color: @error; color: @bg; }
+  100% { background-color: @error; color: @bg; }
+}
+#battery.critical:not(.charging) { color: @error; animation: error-flash 1s linear infinite; }
+#temperature.critical { color: @error; animation: error-flash 1s linear infinite; }
+#power-profiles-daemon.performance { color: @warning; }
+#power-profiles-daemon.power-saver { color: @success; }

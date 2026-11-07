@@ -1,0 +1,26 @@
+/* gtklock look: the theme's colors on bg, Adwaita Sans (GNOME UI font). The @define-color
+   lines precede this file (gtklock/default.nix). */
+
+* { font-family: "Adwaita Sans", sans-serif; }
+window { background-color: @bg; }
+#clock-label { font-size: 96px; font-weight: 200; color: @fg; }
+#date-label { font-size: 20px; color: @fg_muted; }
+#input-label { color: @fg_muted; }
+#input-field {
+  min-width: 280px;
+  padding: 8px 14px;
+  color: @fg;
+  caret-color: @accent;
+  background-color: alpha(@bg, 0.80);
+  border: 1px solid @border;
+  border-radius: 10px;
+}
+#input-field:focus { border-color: @accent; }
+#unlock-button {
+  color: @bg;
+  background-image: none;
+  background-color: @accent;
+  border: none;
+  border-radius: 10px;
+}
+#error-label, #warning-label { color: @error; }

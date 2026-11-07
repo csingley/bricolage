@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Mouse-driven twin of scripts/power-menu.sh for the waybar button: a native GTK
+  popup (click the button, click an item) instead of a keyboard-driven menu.
+  Item ids are the keys of `menu-actions` in waybar/default.nix.
+-->
+<interface>
+  <object class="GtkMenu" id="menu">
+    <child><object class="GtkMenuItem" id="lock"><property name="label">Lock</property></object></child>
+    <child><object class="GtkMenuItem" id="suspend"><property name="label">Suspend</property></object></child>
+    <child><object class="GtkSeparatorMenuItem" id="sep"/></child>
+    <child><object class="GtkMenuItem" id="logout"><property name="label">Log out</property></object></child>
+    <child><object class="GtkMenuItem" id="reboot"><property name="label">Reboot</property></object></child>
+    <child><object class="GtkMenuItem" id="poweroff"><property name="label">Power off</property></object></child>
+  </object>
+</interface>
