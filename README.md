@@ -15,6 +15,7 @@ can drive it (see Colors).
 | nm-applet, blueman | network and Bluetooth in the tray |
 | polkit agent | the password dialog for polkit-gated actions |
 | btop, htop | system monitors, opened from the CPU and memory widgets (click again to close) |
+| ranger | the file manager, with sixel image previews in foot |
 
 ## A tour
 
@@ -110,6 +111,7 @@ Who colors what:
 | menu (fzf) | your theme's `FZF_DEFAULT_OPTS` | fzf's stock colors |
 | btop | your theme module, or a theme named in `bricolage.btop.colorTheme` | btop's own default |
 | htop | the escape-sequence file in `bricolage.htop.colorsFile` | the terminal's colors |
+| ranger | the terminal's colors (your theme's foot port) | the terminal's colors |
 
 Sway's window colors aside, Bricolage never substitutes colors for a program your theme does not
 cover: that program is stock, with no error. Malachite covers all of them. For another theme, check which of the programs above it

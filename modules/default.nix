@@ -40,6 +40,7 @@ in
     ./waybar
     ./tray.nix
     ./polkit.nix
+    ./ranger.nix
   ];
 
   config = lib.mkIf config.bricolage.enable {
