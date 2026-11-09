@@ -62,7 +62,13 @@ reconcile() { (flock 9; reconcile_locked "${1:-}") 9>"${XDG_RUNTIME_DIR:-/tmp}/b
 reconcile_locked() {
   local trigger=$1
   scan || return 0
-  if [ "$others" -gt 0 ]; then hold_inhibitor; else release_inhibitor; fi
+  # Released only with the lid open: dropping it under a closed lid makes logind suspend at once,
+  # before the grace delay and the lock.
+  if [ "$others" -gt 0 ]; then
+    hold_inhibitor
+  elif ! lid_closed; then
+    release_inhibitor
+  fi
   if lid_closed && [ "$others" -gt 0 ]; then
     cancel_suspend
     if [ "$panel_on" = true ]; then

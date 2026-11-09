@@ -58,8 +58,11 @@ stateDiagram-v2
 - The grace-timer suspend (C to D) locks the session and waits for the locker before suspending, so
   the panel does not wake showing the session.
 - While another display is active the policy holds a `handle-lid-switch` inhibitor, so logind does
-  not suspend on a closed lid even when its `HandleLidSwitchDocked` is `suspend`. In D the inhibitor
-  is released and logind's own lid action applies.
+  not suspend on a closed lid even when its `HandleLidSwitchDocked` is `suspend`. The inhibitor is
+  released only with the lid open and no other display: releasing it under a closed lid makes logind
+  suspend at once, before the grace delay and the lock. So in C to D the inhibitor stays, and the
+  grace-timer suspend does the suspending. Closing the lid alone (A to D) holds none, and logind's
+  own lid action applies.
 
 ## Sleep
 
