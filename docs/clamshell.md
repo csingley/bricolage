@@ -55,6 +55,8 @@ stateDiagram-v2
 - Lid close locks only in D (the panel is the last display); docked, the idle timer locks. The panel
   is not disabled while a lock is up, since gtklock crashes when its output goes away; the policy
   retries until the lock is gone.
+- The grace-timer suspend (C to D) locks the session and waits for the locker before suspending, so
+  the panel does not wake showing the session.
 - While another display is active the policy holds a `handle-lid-switch` inhibitor, so logind does
   not suspend on a closed lid even when its `HandleLidSwitchDocked` is `suspend`. In D the inhibitor
   is released and logind's own lid action applies.

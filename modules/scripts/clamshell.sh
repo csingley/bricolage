@@ -12,7 +12,7 @@
 #   clamshell lid-close        the lid closed: apply the policy; lock if the panel is the last display
 #   clamshell lid-open         the lid opened: the panel comes on, whatever the layout
 #   clamshell watch            reconcile, then again on every sway output event
-#   clamshell suspend-if-alone suspend if the lid is closed and the panel is the only output
+#   clamshell suspend-if-alone lock, then suspend, if the lid is closed and the panel is the only output
 #
 # Requires (outside Nix):
 #   distro sway   - swaymsg
@@ -84,9 +84,18 @@ reconcile_locked() {
   fi
 }
 
+# Lock first and wait for the locker, so the panel never wakes showing the session.
 suspend_if_alone() {
   scan || return 0
-  if lid_closed && [ "$others" -eq 0 ]; then $systemctl suspend; fi
+  if lid_closed && [ "$others" -eq 0 ]; then
+    "$pgrep" -x gtklock >/dev/null || $loginctl lock-session
+    for _ in 1 2 3 4 5 6 7 8; do
+      "$pgrep" -x gtklock >/dev/null && break
+      /usr/bin/sleep 0.5
+    done
+    /usr/bin/sleep 1 # gtklock -d detaches once locked; leave it a moment
+    $systemctl suspend
+  fi
 }
 
 case "${1:-}" in
