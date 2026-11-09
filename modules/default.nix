@@ -144,7 +144,11 @@ in
         };
 
         # A sway reload resets the output layout; kanshi applies its profile again.
-        startup = lib.optional config.services.kanshi.enable {
+        startup = [
+          # Focus workspace 1 at login (once, not on a reload).
+          { command = "${tools.swaymsg} workspace number 1"; }
+        ]
+        ++ lib.optional config.services.kanshi.enable {
           command = "${config.services.kanshi.package}/bin/kanshictl reload";
           always = true;
         };
