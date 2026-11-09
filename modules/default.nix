@@ -53,6 +53,9 @@ in
       package = null; # sway comes from the distro
       checkConfig = false; # not validatable against a Nix-built sway
       systemd.enable = true;
+      # sway draws every background, image or solid color, through swaybg, which the distro may
+      # not install (Arch lists it as optional). A store path also skips sway's PATH lookup.
+      extraConfigEarly = "swaybg_command ${pkgs.swaybg}/bin/swaybg";
 
       config = {
         modifier = mod;
@@ -72,7 +75,8 @@ in
         };
 
         # Zoom to fill; the color shows only where the picture doesn't cover.
-        output."*".bg = if cfg.wallpaper != null then "${cfg.wallpaper} fill ${c.bg}" else c.bg;
+        output."*".bg =
+          if cfg.wallpaper != null then "${cfg.wallpaper} fill ${c.bg}" else "${c.bg} solid_color";
 
         # Window colors from bricolage.colors, at default priority so a theme's own sway colors
         # win. The focused window has a surface title bar and brighter text; unfocused windows a bg

@@ -91,6 +91,9 @@
             expect = ''
               must '^@define-color bg #14161a;' .config/waybar/style.css
               must '^client.focused #3a404b #1e2127 #dcdfe4 #aab1bd #3a404b' .config/sway/config
+              must '^swaybg_command /nix/store/.*/bin/swaybg$' .config/sway/config
+              # no wallpaper: swaybg paints the bg color
+              must '^  bg #14161a solid_color$' .config/sway/config
               ! grep -q '^color_theme' .config/btop/btop.conf
             '';
           };
