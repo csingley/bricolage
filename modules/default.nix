@@ -142,6 +142,12 @@ in
           );
         };
 
+        # A sway reload resets the output layout; kanshi applies its profile again.
+        startup = lib.optional config.services.kanshi.enable {
+          command = "${config.services.kanshi.package}/bin/kanshictl reload";
+          always = true;
+        };
+
         # No blanket `inhibit_idle fullscreen`: a forgotten fullscreen window would block lock,
         # screen-off and suspend. Video apps set their own inhibitors; add a narrow rule for one that
         # doesn't.
