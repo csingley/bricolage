@@ -132,14 +132,15 @@ in
           "--locked XF86MonBrightnessDown" = "exec ${tools.brightnessctl} set 5%-";
         };
 
-        # Lock when the lid closes (logind then suspends; swayidle locks before sleep too), then
-        # apply the clamshell policy if it is on.
+        # Lock when the lid closes (logind then suspends; swayidle locks before sleep too). With the
+        # clamshell policy the lid handler decides: docked, the panel goes off and nothing locks.
         bindswitches."lid:on" = {
           locked = true;
-          action = lib.concatStringsSep "; " (
-            [ "exec ${tools.loginctl} lock-session" ]
-            ++ lib.optional cfg.clamshell.enable "exec ${lib.getExe scripts.clamshell} reconcile"
-          );
+          action =
+            if cfg.clamshell.enable then
+              "exec ${lib.getExe scripts.clamshell} lid-close"
+            else
+              "exec ${tools.loginctl} lock-session";
         };
 
         # A sway reload resets the output layout; kanshi applies its profile again.

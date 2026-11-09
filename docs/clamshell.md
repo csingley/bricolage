@@ -50,6 +50,15 @@ stateDiagram-v2
 - The policy does not depend on a layout tool. It works with kanshi, a hand-written layout, a widget,
   or none.
 
+## Lock and logind
+
+- Lid close locks only in D (the panel is the last display); docked, the idle timer locks. The panel
+  is not disabled while a lock is up, since gtklock crashes when its output goes away; the policy
+  retries until the lock is gone.
+- While another display is active the policy holds a `handle-lid-switch` inhibitor, so logind does
+  not suspend on a closed lid even when its `HandleLidSwitchDocked` is `suspend`. In D the inhibitor
+  is released and logind's own lid action applies.
+
 ## Sleep
 
 Two independent mechanisms; neither is tied to the lock timer.
@@ -62,5 +71,4 @@ Two independent mechanisms; neither is tied to the lock timer.
 ## Not covered
 
 - Turning the panel off while it is the only output, or keeping it on under a closed lid.
-- The lock-on-lid-close binding, which is lock policy.
 - Convertible hinge modes, which are a separate event from the lid switch.

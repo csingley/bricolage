@@ -3,7 +3,13 @@
 # another output is active. Idempotent; the state is recomputed from the lid and the outputs on
 # every call. Outside a lid-open event the panel is enabled only when it would be the last display,
 # so a layout may keep it off with the lid open.
+#
+# While another display is active the script holds a lid-switch inhibitor, so logind does not
+# suspend (its HandleLidSwitchDocked may be "suspend"); without one, logind's own lid action applies.
+# gtklock crashes when its output is disabled, so the panel is left on while a lock is up and the
+# script retries until it is gone.
 #   clamshell reconcile        apply the policy once
+#   clamshell lid-close        the lid closed: apply the policy; lock if the panel is the last display
 #   clamshell lid-open         the lid opened: the panel comes on, whatever the layout
 #   clamshell watch            reconcile, then again on every sway output event
 #   clamshell suspend-if-alone suspend if the lid is closed and the panel is the only output
@@ -12,9 +18,13 @@
 #   distro sway   - swaymsg
 #   base  systemd - systemctl, systemd-run; the lid state in /proc/acpi/button/lid
 swaymsg=/usr/bin/swaymsg
+loginctl=/usr/bin/loginctl
+pgrep=/usr/bin/pgrep
 systemctl=/usr/bin/systemctl
 systemd_run=/usr/bin/systemd-run
 unit=bricolage-clamshell-suspend
+retry_unit=bricolage-clamshell-retry
+inhibit_unit=bricolage-clamshell-inhibit
 grace=5s # a link retrain or monitor standby must not suspend the machine
 
 lid_closed() { grep -qs closed /proc/acpi/button/lid/*/state; }
@@ -34,6 +44,16 @@ scan() {
   panel_on=$(jq -r --arg i "$internal" '.[] | select(.name == $i) | .active' <<<"$outputs")
 }
 
+hold_inhibitor() {
+  if ! $systemctl --user --quiet is-active "$inhibit_unit.service"; then
+    $systemd_run --user --quiet --unit="$inhibit_unit" /usr/bin/systemd-inhibit \
+      --what=handle-lid-switch --who=bricolage-clamshell --why="a display is attached" \
+      /usr/bin/sleep infinity || true
+  fi
+}
+
+release_inhibitor() { $systemctl --user stop "$inhibit_unit.service" 2>/dev/null || true; }
+
 cancel_suspend() { $systemctl --user stop "$unit.timer" 2>/dev/null || true; }
 
 reconcile() {
@@ -41,9 +61,16 @@ reconcile() {
   exec 9>"${XDG_RUNTIME_DIR:-/tmp}/bricolage-clamshell.lock"
   flock 9
   scan || return 0
+  if [ "$others" -gt 0 ]; then hold_inhibitor; else release_inhibitor; fi
   if lid_closed && [ "$others" -gt 0 ]; then
     cancel_suspend
-    if [ "$panel_on" = true ]; then $swaymsg output "$internal" disable; fi
+    if [ "$panel_on" = true ]; then
+      if "$pgrep" -x gtklock >/dev/null; then
+        $systemd_run --user --quiet --unit="$retry_unit" --on-active=10s "$0" reconcile || true
+      else
+        $swaymsg output "$internal" disable
+      fi
+    fi
   else
     if ! lid_closed; then cancel_suspend; fi
     if [ "$panel_on" != true ] && { [ "$others" -eq 0 ] || [ "$trigger" = lid-open ]; }; then
@@ -64,13 +91,17 @@ suspend_if_alone() {
 case "${1:-}" in
   reconcile) reconcile ;;
   lid-open) reconcile lid-open ;;
+  lid-close)
+    reconcile
+    if [ "$others" -eq 0 ]; then $loginctl lock-session; fi
+    ;;
   suspend-if-alone) suspend_if_alone ;;
   watch)
     reconcile || true
     $swaymsg -t subscribe -m '["output"]' | while read -r _; do reconcile || true; done
     ;;
   *)
-    echo "usage: clamshell reconcile|lid-open|watch|suspend-if-alone" >&2
+    echo "usage: clamshell reconcile|lid-open|lid-close|watch|suspend-if-alone" >&2
     exit 2
     ;;
 esac
