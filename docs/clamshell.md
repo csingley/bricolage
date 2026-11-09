@@ -29,7 +29,7 @@ stateDiagram-v2
 | A | B | dock | none |
 | B | A | undock | none |
 | B | C | lid close | disable the panel |
-| C | B | lid open | enable the panel |
+| C | B | lid open | enable the panel, whatever the layout |
 | A | D | lid close | suspend (logind's default) |
 | D | A | lid open | none; the machine wakes |
 | C | D | undock, last display | enable the panel; suspend after the grace delay |
@@ -39,7 +39,9 @@ stateDiagram-v2
 
 - Docked means at least one enabled external output. An output blanked by the idle timer counts; a
   disabled one does not.
-- Invariant: absent an explicit user override, at least one display is enabled. The panel stays on in
+- Outside a lid-open event the panel is enabled only when it would be the last display, so a layout
+  may keep it off with the lid open; opening the lid always turns it on.
+- Invariant: at least one display is enabled. The panel stays on in
   D because it is the only output.
 - The state is recomputed from the lid and the outputs on every event; nothing is stored except the
   grace timer. Resume from suspend is another recompute.
@@ -59,7 +61,6 @@ Two independent mechanisms; neither is tied to the lock timer.
 
 ## Not covered
 
-- An explicit user override of the invariant: turning the panel off while it is the only output, or
-  keeping it on under a closed lid.
+- Turning the panel off while it is the only output, or keeping it on under a closed lid.
 - The lock-on-lid-close binding, which is lock policy.
 - Convertible hinge modes, which are a separate event from the lid switch.

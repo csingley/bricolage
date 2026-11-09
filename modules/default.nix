@@ -35,6 +35,7 @@ in
   imports = [
     ./options.nix
     ./idle.nix
+    ./clamshell.nix
     ./gtklock
     ./btop.nix
     ./waybar
@@ -131,10 +132,14 @@ in
           "--locked XF86MonBrightnessDown" = "exec ${tools.brightnessctl} set 5%-";
         };
 
-        # Lock when the lid closes (logind then suspends; swayidle locks before sleep too).
+        # Lock when the lid closes (logind then suspends; swayidle locks before sleep too), then
+        # apply the clamshell policy if it is on.
         bindswitches."lid:on" = {
           locked = true;
-          action = "exec ${tools.loginctl} lock-session";
+          action = lib.concatStringsSep "; " (
+            [ "exec ${tools.loginctl} lock-session" ]
+            ++ lib.optional cfg.clamshell.enable "exec ${lib.getExe scripts.clamshell} reconcile"
+          );
         };
 
         # No blanket `inhibit_idle fullscreen`: a forgotten fullscreen window would block lock,

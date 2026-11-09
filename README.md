@@ -134,6 +134,7 @@ theme.
 | `bricolage.wallpaper` | the image sway paints and gtklock blurs; null for the `bg` color |
 | `bricolage.laptop` | the machine has a battery and backlight; defaults the widgets and suspend below |
 | `bricolage.idle.suspendOnBattery` | suspend after a long idle on battery |
+| `bricolage.clamshell.enable` | the internal panel is off while the lid is closed and another display is active ([docs/clamshell.md](docs/clamshell.md)); works with or without a layout tool |
 | `bricolage.bar.workspaces.{pinned,buttonMinWidth}` | always-shown workspaces and the button width |
 | `bricolage.bar.widgets.<name>` | one switch per widget; `temperature` is the sensor's hwmon path or null |
 | `bricolage.polkitAgent` | the path of the distro's polkit agent (it differs between distros) |

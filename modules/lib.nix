@@ -4,7 +4,7 @@
 # Requires (outside Nix):
 #   distro sway    - swaymsg
 #   distro blueman - blueman-applet
-#   base  systemd  - loginctl, systemctl
+#   base  systemd  - loginctl, systemctl, systemd-run
 {
   pkgs,
   config,
@@ -90,6 +90,11 @@ in
     ];
     lock = script "lock" [ ];
     suspendOnBattery = script "suspend-on-battery" [ ];
+    clamshell = script "clamshell" [
+      pkgs.jq
+      pkgs.gnugrep
+      pkgs.util-linux
+    ];
     screenshot = script "screenshot" [
       pkgs.grim
       pkgs.slurp

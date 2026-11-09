@@ -89,6 +89,11 @@ in
       description = "Suspend after a long idle when running on battery (never on AC).";
     };
 
+    clamshell.enable = lib.mkEnableOption ''
+      the clamshell policy (docs/clamshell.md): the internal panel is off while the lid is closed
+      and another display is active, and on otherwise. It does not depend on a layout tool
+    '';
+
     bar = {
       workspaces = {
         pinned = lib.mkOption {
