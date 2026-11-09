@@ -56,10 +56,11 @@ release_inhibitor() { $systemctl --user stop "$inhibit_unit.service" 2>/dev/null
 
 cancel_suspend() { $systemctl --user stop "$unit.timer" 2>/dev/null || true; }
 
-reconcile() {
-  local trigger=${1:-}
-  exec 9>"${XDG_RUNTIME_DIR:-/tmp}/bricolage-clamshell.lock"
-  flock 9
+# One reconcile at a time; the lock is held only for its subshell.
+reconcile() { (flock 9; reconcile_locked "${1:-}") 9>"${XDG_RUNTIME_DIR:-/tmp}/bricolage-clamshell.lock"; }
+
+reconcile_locked() {
+  local trigger=$1
   scan || return 0
   if [ "$others" -gt 0 ]; then hold_inhibitor; else release_inhibitor; fi
   if lid_closed && [ "$others" -gt 0 ]; then
@@ -93,6 +94,7 @@ case "${1:-}" in
   lid-open) reconcile lid-open ;;
   lid-close)
     reconcile
+    scan || true
     if [ "$others" -eq 0 ]; then $loginctl lock-session; fi
     ;;
   suspend-if-alone) suspend_if_alone ;;
