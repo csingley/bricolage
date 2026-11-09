@@ -16,11 +16,12 @@
 #
 # Requires (outside Nix):
 #   distro sway   - swaymsg
-#   base  systemd - systemctl, systemd-run; the lid state in /proc/acpi/button/lid
+#   base  systemd - systemctl, systemd-run, busctl; the lid state in /proc/acpi/button/lid
 swaymsg=/usr/bin/swaymsg
 loginctl=/usr/bin/loginctl
 pgrep=/usr/bin/pgrep
 systemctl=/usr/bin/systemctl
+busctl=/usr/bin/busctl
 systemd_run=/usr/bin/systemd-run
 unit=bricolage-clamshell-suspend
 retry_unit=bricolage-clamshell-retry
@@ -28,6 +29,13 @@ inhibit_unit=bricolage-clamshell-inhibit
 grace=5s # a link retrain or monitor standby must not suspend the machine
 
 lid_closed() { grep -qs closed /proc/acpi/button/lid/*/state; }
+
+# True while logind is already suspending the machine (its own lid action, say), when a second
+# `systemctl suspend` is refused.
+suspending() {
+  [ "$($busctl get-property org.freedesktop.login1 /org/freedesktop/login1 \
+    org.freedesktop.login1.Manager PreparingForSleep)" = "b true" ]
+}
 
 outputs=
 internal=
@@ -100,7 +108,8 @@ suspend_if_alone() {
       /usr/bin/sleep 0.5
     done
     /usr/bin/sleep 1 # gtklock -d detaches once locked; leave it a moment
-    $systemctl suspend
+    # Locked above either way; logind's own suspend got there first, so there is nothing to start.
+    suspending || $systemctl suspend
   fi
 }
 
