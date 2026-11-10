@@ -34,8 +34,8 @@ window#waybar { background: @bg; color: @fg; }
    a toggle you flipped, an error. The tray and the power button are single-widget pills.
    (The clock stands alone in the center, so it gets none.) */
 #tray, #custom-power { background: @surface; border-radius: 8px; margin: 3px 2px; }
-/* On the left, 12px after the workspace buttons (2px of their margin + 10px). */
-#tray { margin-left: 10px; }
+/* On the left, 12px before the workspace buttons (2px of the tray's margin + 10px). */
+#workspaces { margin-left: 10px; }
 #energy, #load, #controls { background: @surface; border-radius: 8px; margin: 3px 2px 3px 10px; padding: 0 2px; }
 #pulseaudio, #battery, #mode, #idle_inhibitor, #cpu, #memory, #backlight, #temperature,
 #power-profiles-daemon { border-radius: 8px; margin: 2px 0; }

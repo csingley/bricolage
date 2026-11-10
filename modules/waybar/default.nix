@@ -80,12 +80,12 @@ in
           layer = "top";
           position = "top";
           height = 28;
-          # The tray's width varies, so it sits last on the left where its growth shifts nothing (the mode
-          # label, which appears only in a mode such as resize, follows it); it moves only when the workspace
-          # list changes size.
+          # The tray, which is clicked, is first so it stays at the bar's edge; the workspaces, which are
+          # driven by keys, shift when it changes width. The mode label, which appears only in a mode such
+          # as resize, comes last so it moves nothing.
           modules-left = [
-            "sway/workspaces"
             "tray"
+            "sway/workspaces"
             "sway/mode"
           ];
           modules-center = [ "clock" ];
@@ -102,7 +102,7 @@ in
             )
             ++ [ "custom/power" ];
           # Workspaces 1 to `pinned` are always shown (empty ones dimmer), so the picker has a constant
-          # width and the tray after it never moves.
+          # width.
           "sway/workspaces" = {
             persistent-workspaces = lib.genAttrs (map toString (lib.range 1 cfg.bar.workspaces.pinned)) (
               _: [ ]
