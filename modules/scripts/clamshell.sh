@@ -64,6 +64,9 @@ release_inhibitor() { $systemctl --user stop "$inhibit_unit.service" 2>/dev/null
 
 cancel_suspend() { $systemctl --user stop "$unit.timer" 2>/dev/null || true; }
 
+# A grace-timer suspend is already scheduled or running; its unit name is taken.
+suspend_pending() { $systemctl --user --quiet is-active "$unit.timer" "$unit.service"; }
+
 # One reconcile at a time; the lock is held only for its subshell.
 reconcile() { (flock 9; reconcile_locked "${1:-}") 9>"${XDG_RUNTIME_DIR:-/tmp}/bricolage-clamshell.lock"; }
 
@@ -91,7 +94,7 @@ reconcile_locked() {
     if [ "$panel_on" != true ] && { [ "$others" -eq 0 ] || [ "$trigger" = lid-open ]; }; then
       $swaymsg output "$internal" enable
       # Unplugged the last display with the lid shut: nothing else will suspend the machine.
-      if lid_closed; then
+      if lid_closed && ! suspend_pending; then
         $systemd_run --user --unit="$unit" --on-active="$grace" "$0" suspend-if-alone
       fi
     fi
