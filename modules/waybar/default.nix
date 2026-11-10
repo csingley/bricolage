@@ -225,6 +225,10 @@ in
             format-alt-charging = "${ic.charging}  {time:>4}";
             format-alt-plugged = "${ic.plugged}  {time:>4}";
             tooltip-format = "Battery: {timeTo}\nPower: {power} W\nClick: toggle percentage / time";
+            # On AC the click toggle has no visible effect; don't offer it.
+            tooltip-format-charging = "Charging: {timeTo}\nPower: {power} W";
+            tooltip-format-plugged = "On AC power\nPower: {power} W";
+            tooltip-format-full = "Fully charged\nPower: {power} W";
           };
           # System power-profiles-daemon; click cycles performance/balanced/power-saver.
           power-profiles-daemon = {
