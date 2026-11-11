@@ -19,7 +19,9 @@ let
   cfg = config.bricolage;
   w = cfg.bar.widgets;
   # A group of widgets, each present when its switch is on; empty groups are dropped.
+  enabledTasks = builtins.attrNames (lib.filterAttrs (_: t: t.enable) cfg.bar.tasks);
   groups = lib.filterAttrs (_: g: g != [ ]) {
+    tasks = map (n: "custom/tasks#${n}") enabledTasks;
     energy =
       lib.optional w.battery "battery"
       ++ lib.optional w.powerProfile "power-profiles-daemon"
@@ -40,6 +42,16 @@ let
     colors = cfg.colors;
     inherit (bl) ramp;
   };
+
+  # One widget per enabled task source, grouped like the others.
+  taskSettings = lib.genAttrs (map (n: "custom/tasks#${n}") enabledTasks) (
+    id:
+    {
+      return-type = "json";
+      exec = cfg.bar.tasks.${lib.removePrefix "custom/tasks#" id}.command;
+      restart-interval = 5; # a command that ends is started again
+    }
+  );
 
   # The default orientation is "orthogonal", which is vertical on a horizontal bar.
   groupSettings = lib.mapAttrs' (
@@ -75,6 +87,7 @@ in
       systemd.enable = true;
       settings.main =
         groupSettings
+        // taskSettings
         // temperatureSettings
         // {
           layer = "top";
@@ -89,12 +102,15 @@ in
             "sway/mode"
           ];
           modules-center = [ "clock" ];
-          # Left to right, four groups (gaps in style.css): energy (battery and the modes that drain it),
-          # load (memory, temperature, cpu), controls (brightness, mic, speaker), power (the session menu).
-          # Every widget has a fixed width, so each sits a fixed distance from the right edge.
+          # Left to right, five groups (gaps in style.css): tasks (sources of work that may need you, if
+          # any are enabled), energy (battery and the modes that drain it), load (memory, temperature,
+          # cpu), controls (brightness, mic, speaker), power (the session menu). Every widget has a fixed
+          # width, so each sits a fixed distance from the right edge; tasks, whose width follows what it
+          # reports, is leftmost so that it moves nothing.
           modules-right =
             map (g: "group/${g}") (
               builtins.filter (g: groups ? ${g}) [
+                "tasks"
                 "energy"
                 "load"
                 "controls"

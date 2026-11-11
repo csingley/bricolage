@@ -37,6 +37,7 @@
           pkgs,
           home-manager ? inputs.home-manager,
           colors ? null,
+          extra ? { },
           expect,
         }:
         let
@@ -54,12 +55,15 @@
                 bricolage.enable = true;
               }
               (pkgs.lib.optionalAttrs (colors != null) { bricolage.colors = colors; })
+              extra
             ];
           };
         in
         pkgs.runCommand "bricolage-module-check" { } ''
           cd ${hm.config.home-files}
           must() { grep -q "$@" || { echo "missing: $*"; exit 1; }; }
+          mustnt() { if grep -q "$@"; then echo "unexpected: $*"; exit 1; fi; }
+          absent() { if test -e "$1"; then echo "unexpected: $1"; exit 1; fi; }
           test -e .config/sway/config
           test -e .config/waybar/config
           test -e .config/gtklock/style.css
@@ -94,7 +98,36 @@
               must '^swaybg_command /nix/store/.*/bin/swaybg$' .config/sway/config
               # no wallpaper: swaybg paints the bg color
               must '^  bg #14161a solid_color$' .config/sway/config
-              ! grep -q '^color_theme' .config/btop/btop.conf
+              mustnt '^color_theme' .config/btop/btop.conf
+              # no task sources: no task pills
+              mustnt 'custom/tasks' .config/waybar/config
+            '';
+          };
+          # Task sources: the enabled ones share one pill, first on the right, and every class a source
+          # may report has a rule (idle is the plain text color).
+          checks.module-tasks = moduleCheck {
+            inherit pkgs;
+            extra.bricolage.bar.tasks = {
+              bells = {
+                enable = true;
+                command = "/bin/true";
+              };
+              builds = {
+                enable = true;
+                command = "/bin/true";
+              };
+              off.command = "/bin/true"; # defined, not enabled
+            };
+            expect = ''
+              must '"custom/tasks#bells": {' .config/waybar/config
+              must '"custom/tasks#builds": {' .config/waybar/config
+              mustnt 'custom/tasks#off' .config/waybar/config
+              # one pill for the sources, first on the right
+              grep -A2 '"modules-right"' .config/waybar/config | tr -d ' \n' | grep -q '^"modules-right":\["group/tasks","group/'
+              grep -A5 '"group/tasks": {' .config/waybar/config | tr -d ' \n' | grep -q '"modules":\["custom/tasks#bells","custom/tasks#builds"\]'
+              must '^#tasks, #energy, #load, #controls { background: @surface;' .config/waybar/style.css
+              for c in none running waiting down; do must "^#custom-tasks\.$c " .config/waybar/style.css; done
+              must '^@keyframes warning-flash' .config/waybar/style.css
             '';
           };
           # Imported but not enabled: nothing is applied.
@@ -116,9 +149,10 @@
             in
             pkgs.runCommand "bricolage-disabled-check" { } ''
               cd ${hm.config.home-files}
-              ! test -e .config/sway/config
-              ! test -e .config/waybar/config
-              ! test -e .config/gtklock
+              absent() { if test -e "$1"; then echo "unexpected: $1"; exit 1; fi; }
+              absent .config/sway/config
+              absent .config/waybar/config
+              absent .config/gtklock
               touch $out
             '';
           # programs.gtklock on its own: settings, a style and modules.
@@ -186,7 +220,7 @@
               must '^@define-color bg #1e1e2e;' .config/gtklock/style.css
               must '^client.urgent #f38ba8 #f38ba8 #1e1e2e #f38ba8 #f38ba8' .config/sway/config
               # mako's colors belong to the theme, so without one they stay stock
-              ! grep -q '^background-color=' .config/mako/config
+              mustnt '^background-color=' .config/mako/config
               must '^background=313244' .config/swaynag/config
             '';
           };

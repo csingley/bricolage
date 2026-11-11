@@ -154,6 +154,46 @@ in
         };
     };
 
+    # Sources of tasks: one widget each, in a pill of their own. See the description.
+    bar.tasks = lib.mkOption {
+      type = lib.types.attrsOf (
+        lib.types.submodule {
+          options = {
+            enable = lib.mkEnableOption "this task source's widget";
+            command = lib.mkOption {
+              type = lib.types.str;
+              example = lib.literalExpression ''"''${pkgs.writeShellScript "bells" "..."}"'';
+              description = "The command that reports the tasks; it runs for as long as the bar does.";
+            };
+          };
+        }
+      );
+      default = { };
+      example = lib.literalExpression ''{ bells = { enable = true; command = "''${bellWatcher}"; }; }'';
+      description = ''
+        Sources of tasks: work that runs on its own and may need you, such as agent sessions, builds,
+        CI runs, backups or a pane that rang its bell. Each enabled source is a widget, named by its
+        attribute, in a pill at the left of the bar's right side, so that the pill's width changing
+        moves nothing else.
+
+        The command prints one JSON object per line, in waybar's custom-module format, each time
+        its report changes: `{"text": "...", "class": "...", "tooltip": "..."}`. Any command that
+        already works as a waybar custom module qualifies. `text` and `tooltip` are Pango markup, so
+        the command must escape anything it did not write itself, and `text` should not be empty.
+        The `class` is one of the following, and sets the widget's look:
+
+        - `none`: no tasks. Faint.
+        - `idle`: tasks exist and none is running or waiting. The plain text color.
+        - `running`: work is in progress. Green.
+        - `waiting`: a task is blocked on you. A flashing amber fill, which is a call to act.
+        - `down`: the source cannot be reached, which is not the same as no tasks. Red text,
+          asking for nothing.
+
+        A source's name is added as a second CSS class, and must be lowercase letters, digits and
+        hyphens.
+      '';
+    };
+
     polkitAgent = lib.mkOption {
       type = lib.types.str;
       default = "/usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1";
@@ -186,6 +226,12 @@ in
       message = "bricolage.colors lacks: ${
         lib.concatStringsSep ", " (lib.filter (n: !(config.bricolage.colors ? ${n})) bl.required)
       }.";
+    }
+    {
+      assertion = lib.all (n: builtins.match "[a-z][a-z0-9-]*" n != null) (
+        builtins.attrNames config.bricolage.bar.tasks
+      );
+      message = "bricolage.bar.tasks names must be lowercase letters, digits and hyphens, starting with a letter.";
     }
     {
       assertion =

@@ -8,7 +8,7 @@ can drive it (see Colors).
 | Part | What |
 |---|---|
 | sway | the session: keys, input, window rules, title bars |
-| waybar | the bar: workspaces, tray, energy, load and control widgets, the power menu |
+| waybar | the bar: workspaces, tray, task sources, energy, load and control widgets, the power menu |
 | menu | fzf in a small floating foot window: the launcher (`$mod+d`) and the power menu (`$mod+Shift+p`) |
 | gtklock, swayidle | the lock screen, with a blurred wallpaper; lock, then screen off, then suspend on battery |
 | mako, swaynag | notifications and banners |
@@ -137,6 +137,7 @@ theme.
 | `bricolage.clamshell.enable` | the internal panel is off while the lid is closed and another display is active ([docs/clamshell.md](docs/clamshell.md)); works with or without a layout tool |
 | `bricolage.bar.workspaces.{pinned,buttonMinWidth}` | always-shown workspaces and the button width |
 | `bricolage.bar.widgets.<name>` | one switch per widget; `temperature` is the sensor's hwmon path or null |
+| `bricolage.bar.tasks.<name>.{enable,command}` | a source of tasks (agent sessions, builds, a pane's bell): a command that prints waybar JSON whose `class` is `none`, `idle`, `running`, `waiting` or `down`; one pill, left of the other widgets |
 | `bricolage.polkitAgent` | the path of the distro's polkit agent (it differs between distros) |
 | `bricolage.terminal.shell` | the shell foot starts; null for the login shell |
 | `bricolage.terminal.opacity` | the terminal's background opacity, 0 to 1 (default 1.0) |

@@ -27,7 +27,7 @@ window#waybar { background: @bg; color: @fg; }
 #workspaces button.focused { background: @selection; color: @fg; }
 #workspaces button.urgent { background: @error; color: @bg; }
 #clock, #tray, #pulseaudio, #battery, #mode, #idle_inhibitor,
-#cpu, #memory, #backlight, #custom-power, #temperature,
+#cpu, #memory, #backlight, #custom-power, #temperature, #custom-tasks,
 #power-profiles-daemon { padding: 0 10px; }
 /* Each group is one rounded pill, so the right side is three shapes instead of eight; the
    widgets inside are bare (no fill of their own) until something is worth noticing: a hover,
@@ -36,7 +36,7 @@ window#waybar { background: @bg; color: @fg; }
 #tray, #custom-power { background: @surface; border-radius: 8px; margin: 3px 2px; }
 /* On the left, 12px before the workspace buttons (2px of the tray's margin + 10px). */
 #workspaces { margin-left: 10px; }
-#energy, #load, #controls { background: @surface; border-radius: 8px; margin: 3px 2px 3px 10px; padding: 0 2px; }
+#tasks, #energy, #load, #controls { background: @surface; border-radius: 8px; margin: 3px 2px 3px 10px; padding: 0 2px; }
 #pulseaudio, #battery, #mode, #idle_inhibitor, #cpu, #memory, #backlight, #temperature,
 #power-profiles-daemon { border-radius: 8px; margin: 2px 0; }
 #mode { background: @surface; margin: 3px 2px; }
@@ -84,3 +84,17 @@ menuitem:hover { background: @selection; }
 #temperature.critical { color: @error; animation: error-flash 1s linear infinite; }
 #power-profiles-daemon.performance { color: @warning; }
 #power-profiles-daemon.power-saver { color: @success; }
+/* Tasks (bar.tasks): the group is a pill like the others, and a source's widget sits on it with
+   the class it reports. Text colors say how things stand and ask for nothing: none faint, idle
+   plain, running green, down red. Waiting is a call to act, so it is a flashing fill. */
+#custom-tasks { border-radius: 8px; margin: 2px 0; }
+#custom-tasks.none { color: @fg_faint; }
+#custom-tasks.running { color: @success; }
+#custom-tasks.down { color: @error; }
+@keyframes warning-flash {
+  0% { background-color: transparent; color: @warning; }
+  49% { background-color: transparent; color: @warning; }
+  50% { background-color: @warning; color: @bg; }
+  100% { background-color: @warning; color: @bg; }
+}
+#custom-tasks.waiting { color: @warning; animation: warning-flash 1s linear infinite; }
