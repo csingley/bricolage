@@ -134,6 +134,36 @@
               must '^@keyframes warning-flash' .config/waybar/style.css
             '';
           };
+          # The agent-sessions widget is a task source of its own, with a click action.
+          checks.module-agents = moduleCheck {
+            inherit pkgs;
+            extra.bricolage.bar.agents = {
+              enable = true;
+              watchCommand = "/bin/true watch";
+              listCommand = "/bin/true list";
+            };
+            expect = ''
+              must '"custom/tasks#agents": {' .config/waybar/config
+              grep -A4 '"custom/tasks#agents": {' .config/waybar/config | grep -q '"exec": "/nix/store/.*-agents-bar"'
+              grep -A4 '"custom/tasks#agents": {' .config/waybar/config | grep -q '"on-click": "/nix/store/.*-agents-focus"'
+            '';
+          };
+          # The widget's script and formatter, run against a fake /proc, a fake swaymsg and canned
+          # views: what each class looks like, that a waiting session no window holds does not raise
+          # the alert, that a click goes to the right window, and that an agent's text cannot reach
+          # the bar as markup.
+          checks.agents-script =
+            let
+              agents = pkgs.writeShellApplication {
+                name = "agents";
+                runtimeInputs = [ pkgs.jq ];
+                text = builtins.readFile ./modules/scripts/agents.sh;
+              };
+            in
+            pkgs.runCommand "bricolage-agents-check" { nativeBuildInputs = [ pkgs.jq ]; } ''
+              bash ${./tests/agents.sh} ${agents}/bin/agents ${./modules/scripts/agents.jq}
+              touch $out
+            '';
           # Imported but not enabled: nothing is applied.
           checks.module-disabled =
             let

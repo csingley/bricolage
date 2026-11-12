@@ -88,6 +88,7 @@ in
       menu
       powerAction
     ];
+    agents = script "agents" [ pkgs.jq ];
     lock = script "lock" [ ];
     suspendOnBattery = script "suspend-on-battery" [ ];
     clamshell = script "clamshell" [

@@ -200,6 +200,21 @@ in
       '';
     };
 
+    # The agent-sessions widget: a task source that shows a view of the sessions. See the description.
+    bar.agents = {
+      enable = lib.mkEnableOption "the agent-sessions widget, a task source named `agents`";
+      watchCommand = lib.mkOption {
+        type = lib.types.str;
+        example = lib.literalExpression ''"''${pkgs.myAgentTracker}/bin/tracker watch"'';
+        description = "A command that prints the view of the sessions now and after each change, one JSON object a line.";
+      };
+      listCommand = lib.mkOption {
+        type = lib.types.str;
+        example = lib.literalExpression ''"''${pkgs.myAgentTracker}/bin/tracker list"'';
+        description = "A command that prints the view of the sessions once.";
+      };
+    };
+
     polkitAgent = lib.mkOption {
       type = lib.types.str;
       default = "/usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1";
@@ -232,6 +247,12 @@ in
       message = "bricolage.colors lacks: ${
         lib.concatStringsSep ", " (lib.filter (n: !(config.bricolage.colors ? ${n})) bl.required)
       }.";
+    }
+    {
+      assertion =
+        !config.bricolage.bar.agents.enable
+        || (config.bricolage.bar.agents.watchCommand != "" && config.bricolage.bar.agents.listCommand != "");
+      message = "bricolage.bar.agents needs watchCommand and listCommand.";
     }
     {
       assertion = lib.all (n: builtins.match "[a-z][a-z0-9-]*" n != null) (

@@ -43,6 +43,18 @@ let
     inherit (bl) ramp;
   };
 
+  # The agent-sessions widget is a task source: its command formats the view for the bar, and its
+  # click raises the window of the session that most needs you. They are the same script, which
+  # reads the view from the commands the options name.
+  agentsScript =
+    mode:
+    "${pkgs.writeShellScript "agents-${mode}" ''
+      export AGENTS_WATCH=${lib.escapeShellArg cfg.bar.agents.watchCommand}
+      export AGENTS_LIST=${lib.escapeShellArg cfg.bar.agents.listCommand}
+      export AGENTS_JQ=${../scripts/agents.jq}
+      exec ${scripts.agents}/bin/agents ${mode}
+    ''}";
+
   # One widget per enabled task source, grouped like the others.
   taskSettings = lib.genAttrs (map (n: "custom/tasks#${n}") enabledTasks) (
     id:
@@ -86,6 +98,12 @@ let
 in
 {
   config = lib.mkIf config.bricolage.enable {
+    bricolage.bar.tasks.agents = lib.mkIf cfg.bar.agents.enable {
+      enable = true;
+      command = agentsScript "bar";
+      onClick = agentsScript "focus";
+    };
+
     programs.waybar = {
       enable = true;
       systemd.enable = true;

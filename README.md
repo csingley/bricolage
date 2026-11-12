@@ -138,6 +138,7 @@ theme.
 | `bricolage.bar.workspaces.{pinned,buttonMinWidth}` | always-shown workspaces and the button width |
 | `bricolage.bar.widgets.<name>` | one switch per widget; `temperature` is the sensor's hwmon path or null |
 | `bricolage.bar.tasks.<name>.{enable,command}` | a source of tasks (agent sessions, builds, a pane's bell): a command that prints waybar JSON whose `class` is `none`, `idle`, `running`, `waiting` or `down`; one pill, left of the other widgets |
+| `bricolage.bar.agents.{enable,watchCommand,listCommand}` | the agent-sessions widget, a task source named `agents`: it formats a view of the sessions ([docs/agents.md](docs/agents.md)) from the two commands, and a click raises the window of the session that most needs you |
 | `bricolage.polkitAgent` | the path of the distro's polkit agent (it differs between distros) |
 | `bricolage.terminal.shell` | the shell foot starts; null for the login shell |
 | `bricolage.terminal.opacity` | the terminal's background opacity, 0 to 1 (default 1.0) |
