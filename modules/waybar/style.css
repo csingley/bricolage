@@ -88,6 +88,10 @@ menuitem:hover { background: @selection; }
    the class it reports. Text colors say how things stand and ask for nothing: none faint, idle
    plain, running green, down red. Waiting is a call to act, so it is a flashing fill. */
 #custom-tasks { border-radius: 8px; margin: 2px 0; }
+/* The agents widget reads "󰚩 1" or "󰚩 1/2" (the number of sessions in the leading state, out of all of
+   them when others differ), so it holds the width of the widest of those, as the volume does:
+   glyph, space and three digits. Padding is added on top, so keep it tight. */
+#custom-tasks.agents { min-width: 48px; }
 #custom-tasks.none { color: @fg_faint; }
 #custom-tasks.running { color: @success; }
 #custom-tasks.down { color: @error; }
