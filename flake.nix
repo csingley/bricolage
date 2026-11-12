@@ -146,8 +146,9 @@
               must '"custom/tasks#agents": {' .config/waybar/config
               grep -A4 '"custom/tasks#agents": {' .config/waybar/config | grep -q '"exec": "/nix/store/.*-agents-bar"'
               grep -A4 '"custom/tasks#agents": {' .config/waybar/config | grep -q '"on-click": "/nix/store/.*-agents-focus"'
-              # the widget keeps one width whether it reads "1" or "1/2"
-              must '^#custom-tasks\.agents { min-width: [0-9]*px; }' .config/waybar/style.css
+              # the widget's width comes from its text, which is the same length in every state
+              # (tests/agents.sh), so the stylesheet sets none
+              mustnt 'custom-tasks\.agents' .config/waybar/style.css
             '';
           };
           # The widget's script and formatter, run against a fake /proc, a fake swaymsg and canned

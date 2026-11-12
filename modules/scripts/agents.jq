@@ -1,6 +1,9 @@
 # Turns one agent view (version 1: a list of sessions, each with a state) into waybar's
 # custom-module JSON, {text, class, tooltip}. The class is one of none, idle, running, waiting or
-# down, for the bar's CSS. The text is never empty, so the widget always has something to show.
+# down, for the bar's CSS. The text is the same length in every state: the glyph, a space and a
+# field of three cells that holds the count, padded. The bar's font is monospace, so the widget
+# keeps one width and the glyph one place however the count changes. The spaces are no-break
+# spaces, which a markup reader does not collapse.
 #
 # $stranded is the pids of the waiting sessions that no window holds. A call to act has to be one
 # that can be acted on, so such a session counts as idle and its tooltip line says why.
@@ -40,8 +43,16 @@ def line:
   + (if stranded then "\n  no window to answer it in" else "" end);
 
 # The number is the sessions in the leading state, out of all of them when others differ, so that
-# "1/2" reads as one of two needing you and a bare number means every session is alike.
-def count($c; $n): if $c == $n then ($c | tostring) else "\($c)/\($n)" end;
+# "1/2" reads as one of two needing you and a bare number means every session is alike. It fits the
+# field of three cells: past nine sessions it reads "9+".
+def count($c; $n):
+  if $n > 9 then "9+"
+  elif $c == $n then ($c | tostring)
+  else "\($c)/\($n)" end;
+# The widget's text: the glyph, then a field of three cells, each a no-break space where empty.
+def cell: " ";
+def field($s): ($s + cell + cell + cell)[0:3];
+def show($s): glyph + cell + field($s);
 
 (.sessions // []) as $all
 | ($all | map(select(stranded | not))) as $live
@@ -51,15 +62,15 @@ def count($c; $n): if $c == $n then ($c | tostring) else "\($c)/\($n)" end;
 | (if $w > 0 then "waiting" elif $r > 0 then "running" elif $n > 0 then "idle" else "none" end) as $state
 | ($all | sort_by(rank)) as $ss
 | if (.version // 1) != 1 then
-    {class: "down", text: (glyph + " ✕"), tooltip: "unsupported agent view version \(.version | safe(10))"}
+    {class: "down", text: show("✕"), tooltip: "unsupported agent view version \(.version | safe(10))"}
   elif (.agg.state // "") == "down" then
-    {class: "down", text: (glyph + " ✕"), tooltip: "the agent source is not running"}
+    {class: "down", text: show("✕"), tooltip: "the agent source is not running"}
   else {
     class: $state,
     text: (
-      if $state == "none" then glyph
-      else glyph + " " + count(
-        (if $state == "waiting" then $w elif $state == "running" then $r else ($n - $w - $r) end); $n)
+      if $state == "none" then show("")
+      else show(count(
+        (if $state == "waiting" then $w elif $state == "running" then $r else ($n - $w - $r) end); $n))
       end),
     tooltip: (($ss[0:12] | map(line) | join("\n"))
       + (if ($ss | length) > 12 then "\n…and \(($ss | length) - 12) more" else "" end))
