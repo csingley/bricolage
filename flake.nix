@@ -225,7 +225,7 @@
             '';
           # The same, against the current stable release (26.05) of nixpkgs and home-manager.
           checks.module-stable = moduleCheck {
-            pkgs = inputs.nixpkgs-stable.legacyPackages.${pkgs.system};
+            pkgs = inputs.nixpkgs-stable.legacyPackages.${pkgs.stdenv.hostPlatform.system};
             home-manager = inputs.home-manager-stable;
             expect = "";
           };
