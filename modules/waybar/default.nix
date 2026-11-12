@@ -46,11 +46,15 @@ let
   # One widget per enabled task source, grouped like the others.
   taskSettings = lib.genAttrs (map (n: "custom/tasks#${n}") enabledTasks) (
     id:
+    let
+      task = cfg.bar.tasks.${lib.removePrefix "custom/tasks#" id};
+    in
     {
       return-type = "json";
-      exec = cfg.bar.tasks.${lib.removePrefix "custom/tasks#" id}.command;
+      exec = task.command;
       restart-interval = 5; # a command that ends is started again
     }
+    // lib.optionalAttrs (task.onClick != null) { on-click = task.onClick; }
   );
 
   # The default orientation is "orthogonal", which is vertical on a horizontal bar.

@@ -111,6 +111,7 @@
               bells = {
                 enable = true;
                 command = "/bin/true";
+                onClick = "/bin/echo clicked";
               };
               builds = {
                 enable = true;
@@ -122,6 +123,9 @@
               must '"custom/tasks#bells": {' .config/waybar/config
               must '"custom/tasks#builds": {' .config/waybar/config
               mustnt 'custom/tasks#off' .config/waybar/config
+              # a click action goes to the source that set it, and only to that one
+              grep -A4 '"custom/tasks#bells": {' .config/waybar/config | grep -q '"on-click": "/bin/echo clicked"'
+              if grep -A4 '"custom/tasks#builds": {' .config/waybar/config | grep -q on-click; then echo 'unexpected on-click on builds'; exit 1; fi
               # one pill for the sources, first on the right
               grep -A2 '"modules-right"' .config/waybar/config | tr -d ' \n' | grep -q '^"modules-right":\["group/tasks","group/'
               grep -A5 '"group/tasks": {' .config/waybar/config | tr -d ' \n' | grep -q '"modules":\["custom/tasks#bells","custom/tasks#builds"\]'

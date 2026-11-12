@@ -165,6 +165,12 @@ in
               example = lib.literalExpression ''"''${pkgs.writeShellScript "bells" "..."}"'';
               description = "The command that reports the tasks; it runs for as long as the bar does.";
             };
+            onClick = lib.mkOption {
+              type = lib.types.nullOr lib.types.str;
+              default = null;
+              example = lib.literalExpression ''"''${pkgs.sway}/bin/swaymsg [app_id=foot] focus"'';
+              description = "A command to run when the widget is clicked, such as one that brings the source's work to the front. None by default.";
+            };
           };
         }
       );
