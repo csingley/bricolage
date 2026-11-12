@@ -67,6 +67,7 @@ let
       restart-interval = 5; # a command that ends is started again
     }
     // lib.optionalAttrs (task.onClick != null) { on-click = task.onClick; }
+    // lib.optionalAttrs (task.format != null) { inherit (task) format; }
   );
 
   # The default orientation is "orthogonal", which is vertical on a horizontal bar.
@@ -102,6 +103,9 @@ in
       enable = true;
       command = agentsScript "bar";
       onClick = agentsScript "focus";
+      # The glyph and a right-aligned field of three, as the battery and the volume have. The robot is an
+      # md glyph, wide like theirs, so two spaces follow it. The command reports the count alone.
+      format = "${ic.agent}  {text:>3}";
     };
 
     programs.waybar = {

@@ -78,6 +78,7 @@ in
   plugged = glyph "\\uf1e6"; # plug
   power = glyph "\\uf011";
   temp = glyph "\\uf2c9"; # thermometer-half
+  agent = glyph "\\udb81\\udea9"; # md-robot U+F06A9, the agent-sessions widget's glyph
   perf = glyph "\\uf135"; # rocket
   balanced = glyph "\\uf24e"; # balance-scale
   saver = glyph "\\uf06c"; # leaf

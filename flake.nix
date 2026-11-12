@@ -112,6 +112,7 @@
                 enable = true;
                 command = "/bin/true";
                 onClick = "/bin/echo clicked";
+                format = "{text:>3}";
               };
               builds = {
                 enable = true;
@@ -120,6 +121,9 @@
               off.command = "/bin/true"; # defined, not enabled
             };
             expect = ''
+              # a source's own format reaches that source only
+              grep -A5 '"custom/tasks#bells": {' .config/waybar/config | grep -q '"format": "{text:>3}"'
+              if grep -A5 '"custom/tasks#builds": {' .config/waybar/config | grep -q '"format"'; then echo 'unexpected format on builds'; exit 1; fi
               must '"custom/tasks#bells": {' .config/waybar/config
               must '"custom/tasks#builds": {' .config/waybar/config
               mustnt 'custom/tasks#off' .config/waybar/config
@@ -146,8 +150,9 @@
               must '"custom/tasks#agents": {' .config/waybar/config
               grep -A4 '"custom/tasks#agents": {' .config/waybar/config | grep -q '"exec": "/nix/store/.*-agents-bar"'
               grep -A4 '"custom/tasks#agents": {' .config/waybar/config | grep -q '"on-click": "/nix/store/.*-agents-focus"'
-              # the widget's width comes from its text, which is the same length in every state
-              # (tests/agents.sh), so the stylesheet sets none
+              # the glyph and a right-aligned field of three come from the bar's format string, as for the
+              # battery and the volume, so the widget keeps one width; the stylesheet sets none
+              grep -A6 '"custom/tasks#agents": {' .config/waybar/config | grep -q '"format": ".*  {text:>3}"'
               mustnt 'custom-tasks\.agents' .config/waybar/style.css
             '';
           };

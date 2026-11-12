@@ -9,7 +9,6 @@ trap 'rm -rf "$t"' EXIT
 cd "$t"
 
 fail() { echo "FAIL: $*" >&2; exit 1; }
-nb=$(printf '\302\240') # a no-break space, which the widget's text uses between its cells
 
 # A process table: PID PARENT. The name in a stat line may hold spaces and parentheses.
 mkdir proc
@@ -43,7 +42,7 @@ bar() { AGENTS_WATCH="cat $1" bash -o errexit -o nounset -o pipefail "$sh" bar; 
 view "$(sess 1000 waiting 5000),$(sess 2000 waiting 9000)" >v1
 out=$(bar v1)
 [ "$(jq -r .class <<<"$out")" = waiting ] || fail "class: $out"
-[ "$(jq -r .text <<<"$out")" = "󰚩${nb}1/2" ] || fail "text: $out"
+[ "$(jq -r .text <<<"$out")" = "1/2" ] || fail "text: $out"
 jq -e '.tooltip | contains("s2000") and contains("no window to answer it in")' <<<"$out" >/dev/null || fail "tooltip: $out"
 [ "$(jq -r .tooltip <<<"$out" | grep -c 'no window')" = 1 ] || fail "only the stranded one is marked: $out"
 
@@ -51,7 +50,7 @@ jq -e '.tooltip | contains("s2000") and contains("no window to answer it in")' <
 view "$(sess 2000 waiting 9000)" >v2
 out=$(bar v2)
 [ "$(jq -r .class <<<"$out")" = idle ] || fail "stranded alone: $out"
-[ "$(jq -r .text <<<"$out")" = "󰚩${nb}1${nb}${nb}" ] || fail "stranded text: $out"
+[ "$(jq -r .text <<<"$out")" = "1" ] || fail "stranded text: $out"
 
 # A session held by a window further up the process tree is answerable.
 view "$(sess 3000 waiting 1)" >v3
@@ -68,12 +67,12 @@ view '{"key":{"tmux":{"socket":"s","serverPid":1,"pane":"%1"}},"agent":"x","stat
 # The other classes, a view of a later version, a source that is down, and a line that is no view.
 view >v5
 out=$(bar v5)
-[ "$(jq -r .class <<<"$out")" = none ] && [ "$(jq -r .text <<<"$out")" = "󰚩${nb}${nb}${nb}${nb}" ] || fail "none: $out"
+[ "$(jq -r .class <<<"$out")" = none ] && [ "$(jq -r .text <<<"$out")" = "0" ] || fail "none: $out"
 view "$(sess 1000 running 1),$(sess 3000 idle 1)" >v6
 out=$(bar v6)
-[ "$(jq -r .class <<<"$out")" = running ] && [ "$(jq -r .text <<<"$out")" = "󰚩${nb}1/2" ] || fail "running: $out"
+[ "$(jq -r .class <<<"$out")" = running ] && [ "$(jq -r .text <<<"$out")" = "1/2" ] || fail "running: $out"
 view "$(sess 1000 idle 1)" >v7
-[ "$(bar v7 | jq -r '[.class, .text] | join("|")')" = "idle|󰚩${nb}1${nb}${nb}" ] || fail "idle"
+[ "$(bar v7 | jq -r '[.class, .text] | join("|")')" = "idle|1" ] || fail "idle"
 echo '{"version":2,"host":"h","agg":{"state":"idle"},"sessions":[]}' >v8
 [ "$(bar v8 | jq -r .class)" = down ] || fail "a later version"
 echo '{"version":1,"host":"","agg":{"state":"down"},"sessions":[]}' >v9
@@ -105,20 +104,22 @@ s() { printf '{"key":{"opaque":"%s"},"agent":"c","state":"%s","ageMs":1}' "$1" "
   view "$(s a running),$(s b running),$(s c idle)"
   view "$(s a idle),$(s b idle)"
 } >counts
-[ "$(bar counts | jq -r '.text | gsub(" "; "") | .[1:]' | tr '\n' ' ')" = "1/2 2 2/3 2 " ] || fail "counts: $(bar counts | jq -r .text | tr '\n' '|')"
+[ "$(bar counts | jq -r .text | tr '\n' ' ')" = "1/2 2 2/3 2 " ] || fail "counts: $(bar counts | jq -r .text | tr '\n' '|')"
 
-# The text is the same length in every state, and the glyph is first with a space after it, so the
-# widget keeps one width and the glyph one place however the count changes. Past nine sessions the
-# count reads "9+" and does not outgrow its field.
+# The text is the count alone, never empty, and fits the three characters the bar's format gives it
+# (`{text:>3}`, as the other widgets give their numbers), so the widget keeps one width: the glyph and
+# the alignment are the bar's, not the formatter's. Past nine sessions the count reads "9+".
 many=$(for i in 1 2 3 4 5 6 7 8 9 10 11 12; do printf '%s,' "$(s "k$i" idle)"; done)
 view "${many%,}" >many
 echo '{"version":1,"host":"","agg":{"state":"down"},"sessions":[]}' >down
-lengths=$(for f in v1 v2 v3 v5 v6 v7 v8 v9 v10 many down counts; do bar "$f" | jq -r '.text | length'; done | sort -u)
-[ "$(wc -l <<<"$lengths")" = 1 ] || fail "the text is not one length in every state: $(echo "$lengths" | tr '\n' ' ')"
-for f in v1 v5 v7 v9 v10 many counts; do
-  bar "$f" | jq -e --arg g "󰚩" --arg nb "$nb" '.text | startswith($g + $nb)' >/dev/null || fail "the glyph is not first, then a space, in $f"
+for f in v1 v2 v3 v5 v6 v7 v8 v9 v10 many down counts; do
+  bar "$f" | jq -e '.text | length >= 1 and length <= 3' >/dev/null || fail "the text does not fit its field in $f: $(bar "$f" | jq -r .text | tr '\n' '|')"
 done
-[ "$(bar many | jq -r .text)" = "󰚩${nb}9+${nb}" ] || fail "many: $(bar many | jq -r .text)"
+for f in v1 v2 v3 v5 v6 v7 v8 v9 v10 many down counts; do
+  if bar "$f" | jq -r .text | grep -q "󰚩\|[[:space:]]"; then fail "the text carries a glyph or padding in $f, which the bar's format supplies"; fi
+done
+[ "$(bar many | jq -r .text)" = "9+" ] || fail "many: $(bar many | jq -r .text)"
+[ "$(bar v8 | jq -r .text)" = "✕" ] && [ "$(bar v10 | jq -r .text)" = "✕" ] || fail "a source that is down shows the cross"
 
 # A session's time in its state is the moment it began, which does not go stale on a bar that shows
 # a line until the next change.

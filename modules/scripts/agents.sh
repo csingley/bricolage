@@ -51,8 +51,8 @@ window_of() {
   return 1
 }
 
-# The same text as the formatter's, in the same length: the glyph, a no-break space, and three cells.
-down='{"class":"down","text":"󰚩 ✕  ","tooltip":"the agent view could not be read"}'
+# The same text as the formatter's for a source that is down; the bar's format adds the glyph.
+down='{"class":"down","text":"✕","tooltip":"the agent view could not be read"}'
 
 bar() {
   local view waiting pids stranded win pid

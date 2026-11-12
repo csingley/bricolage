@@ -1,9 +1,8 @@
 # Turns one agent view (version 1: a list of sessions, each with a state) into waybar's
 # custom-module JSON, {text, class, tooltip}. The class is one of none, idle, running, waiting or
-# down, for the bar's CSS. The text is the same length in every state: the glyph, a space and a
-# field of three cells that holds the count, padded. The bar's font is monospace, so the widget
-# keeps one width and the glyph one place however the count changes. The spaces are no-break
-# spaces, which a markup reader does not collapse.
+# down, for the bar's CSS. The text is the count alone and is never empty: at most three characters,
+# "0" with no sessions and "✕" when the source is down. The glyph and the right-aligned field of
+# three come from the bar's format string (modules/waybar), as for the other widgets.
 #
 # $stranded is the pids of the waiting sessions that no window holds. A call to act has to be one
 # that can be acted on, so such a session counts as idle and its tooltip line says why.
@@ -11,7 +10,6 @@
 # waybar reads text and tooltip as Pango markup, and a session's label, agent and detail are text
 # an agent chose, so each is cleaned of control characters, clipped and escaped before it is shown.
 
-def glyph: "󰚩";                              # nf-md-robot
 # Control characters and line separators become a space. Format characters (bidi overrides,
 # zero-width and tag characters) draw nothing or reorder what is around them, so a command could
 # read other than it is, and are dropped.
@@ -44,15 +42,11 @@ def line:
 
 # The number is the sessions in the leading state, out of all of them when others differ, so that
 # "1/2" reads as one of two needing you and a bare number means every session is alike. It fits the
-# field of three cells: past nine sessions it reads "9+".
+# field of three characters the bar gives it: past nine sessions it reads "9+".
 def count($c; $n):
   if $n > 9 then "9+"
   elif $c == $n then ($c | tostring)
   else "\($c)/\($n)" end;
-# The widget's text: the glyph, then a field of three cells, each a no-break space where empty.
-def cell: " ";
-def field($s): ($s + cell + cell + cell)[0:3];
-def show($s): glyph + cell + field($s);
 
 (.sessions // []) as $all
 | ($all | map(select(stranded | not))) as $live
@@ -62,15 +56,15 @@ def show($s): glyph + cell + field($s);
 | (if $w > 0 then "waiting" elif $r > 0 then "running" elif $n > 0 then "idle" else "none" end) as $state
 | ($all | sort_by(rank)) as $ss
 | if (.version // 1) != 1 then
-    {class: "down", text: show("✕"), tooltip: "unsupported agent view version \(.version | safe(10))"}
+    {class: "down", text: "✕", tooltip: "unsupported agent view version \(.version | safe(10))"}
   elif (.agg.state // "") == "down" then
-    {class: "down", text: show("✕"), tooltip: "the agent source is not running"}
+    {class: "down", text: "✕", tooltip: "the agent source is not running"}
   else {
     class: $state,
     text: (
-      if $state == "none" then show("")
-      else show(count(
-        (if $state == "waiting" then $w elif $state == "running" then $r else ($n - $w - $r) end); $n))
+      if $state == "none" then "0"
+      else count(
+        (if $state == "waiting" then $w elif $state == "running" then $r else ($n - $w - $r) end); $n)
       end),
     tooltip: (($ss[0:12] | map(line) | join("\n"))
       + (if ($ss | length) > 12 then "\n…and \(($ss | length) - 12) more" else "" end))

@@ -45,11 +45,12 @@ The widget's class is the most urgent state: `waiting`, then `running`, then `id
 and `down` when the source cannot be read. The number is the sessions in that state, out of all of
 them when others differ.
 
-The text is the same length in every state, so the widget keeps one width and the glyph one place:
-the glyph, a space, and a field of three cells that holds the number (`1`, `1/2`, `✕` when down,
-nothing when there are no sessions), padded with no-break spaces. The bar's font is monospace, so
-the padding is as wide as a digit. The number fits the field: past nine sessions it reads `9+`.
-The stylesheet sets no width for it.
+The command reports the count alone, and the bar formats it as it does the battery and the volume:
+the glyph from the bar's icon table, then the count right-aligned in three columns (`{text:>3}`), so
+the widget keeps one width and the glyph one place. The count is at most three characters: `1`, `1/2`,
+`9+` past nine sessions, `0` with no sessions, `✕` when the source is down. The stylesheet sets no
+width for it. Any task source can use the same: `bricolage.bar.tasks.<name>.format` is a waybar
+format string in which `{text}` is the text the command reports.
 
 A flashing alert has to be one you can act on. A waiting session that no window holds, such as a
 background job with no terminal, counts as idle instead, and its tooltip line says there is no

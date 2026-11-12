@@ -171,6 +171,17 @@ in
               example = lib.literalExpression ''"''${pkgs.sway}/bin/swaymsg [app_id=foot] focus"'';
               description = "A command to run when the widget is clicked, such as one that brings the source's work to the front. None by default.";
             };
+            format = lib.mkOption {
+              type = lib.types.nullOr lib.types.str;
+              default = null;
+              example = "{text:>3}";
+              description = ''
+                A waybar format string for the widget, in which `{text}` is the text the command
+                reports. It gives a source the bar's own formatting, such as a glyph and a
+                right-aligned field of fixed width, as the other widgets have (`{percentage:>3}%`).
+                None by default: the text is shown as the command reports it.
+              '';
+            };
           };
         }
       );
