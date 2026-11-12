@@ -95,6 +95,23 @@ jq -e '.tooltip | test("[\u001b\u202e\u200b\u2028\udb40\udc01]") | not' <<<"$out
 view '{"key":{"process":{"pid":1000,"startTime":1}},"label":"work","state":"idle","ageMs":1,"detached":true}' >v12
 jq -e '.tooltip | contains("work (background job)")' <<<"$(bar v12)" >/dev/null || fail "a detached job"
 
+# The number is the sessions in the leading state, out of all of them when others differ: "1/2" is
+# one of two, and a bare number means every session is alike.
+s() { printf '{"key":{"opaque":"%s"},"agent":"c","state":"%s","ageMs":1}' "$1" "$2"; }
+{
+  view "$(s a waiting),$(s b running)"
+  view "$(s a waiting),$(s b waiting)"
+  view "$(s a running),$(s b running),$(s c idle)"
+  view "$(s a idle),$(s b idle)"
+} >counts
+[ "$(bar counts | jq -r '.text | split(" ")[1]' | tr '\n' ' ')" = "1/2 2 2/3 2 " ] || fail "counts: $(bar counts | jq -r .text | tr '\n' '|')"
+
+# A session's time in its state is the moment it began, which does not go stale on a bar that shows
+# a line until the next change.
+out=$(bar v1)
+grep -Eq 'waiting since ([0-9]{2}:[0-9]{2}|[A-Z][a-z]{2} [0-9]{2}:[0-9]{2})' <<<"$out" || fail "since: $out"
+if grep -Eq 'waiting [0-9]+[smhd]' <<<"$out"; then fail "a duration was shown: $out"; fi
+
 # focus: the most urgent session that has a window; one with none is passed over.
 focus() { AGENTS_LIST="cat $1" bash -o errexit -o nounset -o pipefail "$sh" focus; }
 : >focus.log
