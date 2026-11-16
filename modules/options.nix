@@ -224,6 +224,17 @@ in
         example = lib.literalExpression ''"''${pkgs.myAgentTracker}/bin/tracker list"'';
         description = "A command that prints the view of the sessions once.";
       };
+      attachCommand = lib.mkOption {
+        type = lib.types.str;
+        default = "";
+        example = "foot claude attach {job}";
+        description = ''
+          A command that brings a background job up in a terminal, with `{job}` in place of the job's id
+          (the view's `sessions[].job`). With one, a click can attach a detached job, and a waiting job is
+          a call to act like any session with a window. Empty by default: a job that no window holds is
+          passed over. The id is put in only when it is letters, digits, `_` and `-`.
+        '';
+      };
     };
 
     polkitAgent = lib.mkOption {

@@ -145,6 +145,7 @@
               enable = true;
               watchCommand = "/bin/true watch";
               listCommand = "/bin/true list";
+              attachCommand = "/bin/true attach {job}";
             };
             expect = ''
               must '"custom/tasks#agents": {' .config/waybar/config

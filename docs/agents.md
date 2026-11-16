@@ -36,6 +36,7 @@ One JSON object, version 1. A line a time from `watchCommand`, and one object fr
 | `sessions[].label`, `agent`, `detail` | The tooltip. Whatever they hold is cleaned and escaped. |
 | `sessions[].ageMs` | The time the session entered its state, and which of two waits is older. |
 | `sessions[].detached` | Marks a background job in the tooltip. |
+| `sessions[].job` | The job's id, for `attachCommand`. Used only with `detached`, and only when it is letters, digits, `_` and `-`. |
 
 Unknown fields are ignored.
 
@@ -59,6 +60,12 @@ a sway window. If sway cannot be asked, or a session's key is not a process, not
 
 A click raises the window of the most urgent session that has one: waiting, then running, then
 idle, and within a state the one that has waited longest.
+
+With `attachCommand` set (for example `"foot claude attach {job}"`), a background job counts as a
+session that can be answered: the click runs the command with `{job}` replaced by the job's id, in the
+order above, and a waiting job calls for action instead of counting as idle. Once the job is attached
+in a terminal it has a window, and the next click raises that. The id comes from the agent, so only
+letters, digits, `_` and `-` are put in the command.
 
 ## Requires
 

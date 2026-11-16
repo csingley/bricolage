@@ -144,6 +144,38 @@ grep -q 'no session has a window' err || fail "focus said: $(cat err)"
 [ ! -s focus.log ] || fail "focus acted with no window"
 if AGENTS_SWAYMSG=/bin/false focus f1 2>err; then fail "focus without sway succeeded"; fi
 
+# A background job no window holds is brought up by the attach command, with its job id in place of
+# {job}, when one is set. It is a candidate in the same order as a session with a window.
+job() { # PID STATE AGEMS JOB
+  printf '{"key":{"process":{"pid":%s,"startTime":1}},"agent":"claude","state":"%s","ageMs":%s,"detached":true,"job":"%s"}' "$1" "$2" "$3" "$4"
+}
+attach() { # VIEW: run focus with an attach command that logs its argument, and wait for the log
+  : >attach.log
+  local status=0
+  AGENTS_ATTACH='echo {job} >>attach.log' focus "$1" || status=$?
+  for _ in $(seq 50); do [ -s attach.log ] && break; sleep 0.1; done
+  return "$status"
+}
+: >focus.log
+view "$(job 2000 waiting 5 35ccf30d),$(sess 1000 idle 1)" >j1
+attach j1
+[ "$(cat attach.log)" = 35ccf30d ] || fail "a waiting job should be attached before an idle window: $(cat attach.log)"
+[ ! -s focus.log ] || fail "a window was raised as well: $(cat focus.log)"
+view "$(job 2000 running 5 35ccf30d),$(sess 1000 waiting 1)" >j2
+attach j2
+[ ! -s attach.log ] && [ "$(cat focus.log)" = "[con_id=7] focus" ] || fail "a waiting window comes before a running job"
+: >focus.log
+view "$(job 2000 waiting 5 35ccf30d)" >j4
+if focus j4 2>err; then fail "a job was attached with no attach command"; fi
+[ ! -s focus.log ] || fail "no attach command, and a window was raised for a job"
+# A job id that is not a plain token is never put in a command.
+view "$(job 2000 waiting 5 'x; touch pwned')" >j3
+if attach j3 2>err; then fail "an unsafe job id was accepted"; fi
+[ ! -e pwned ] && [ ! -s attach.log ] || fail "an unsafe job id reached the command"
+# With an attach command a waiting job is a call to act; without one it still counts as idle.
+[ "$(AGENTS_ATTACH=true bar j1 | jq -r .class)" = waiting ] || fail "a job that can be attached is answerable"
+[ "$(bar j1 | jq -r .class)" = idle ] || fail "a job with no way to attach is not"
+
 # A process table that loops or runs out ends the search.
 proc 40 41
 proc 41 40
