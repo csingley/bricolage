@@ -8,6 +8,16 @@ in
   options.bricolage = {
     enable = lib.mkEnableOption "the Bricolage desktop";
 
+    powerMenu = lib.mkOption {
+      type = lib.types.str;
+      readOnly = true;
+      description = ''
+        The path of the power menu script, for a key bound outside Bricolage. `power-menu reboot` goes
+        straight to the menu's confirmation (no, yes: Enter alone cancels); `power-menu suspend` and
+        `power-menu lock` act at once. Set by the module while `bricolage.enable` is on.
+      '';
+    };
+
     colors = lib.mkOption {
       type = lib.types.attrsOf lib.types.str;
       default = bl.defaults;

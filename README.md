@@ -57,9 +57,14 @@ Bricolage keeps sway's usual keys and adds these:
 | `$mod+d` | the launcher |
 | `$mod+Shift+p` | the power menu |
 | `$mod+Ctrl+l` | lock the screen |
-| `Print` | select a region and copy it as an image |
+| `Print`, `XF86SelectiveScreenshot` (a ThinkPad's F10) | select a region and copy it as an image |
+| `XF86Display` (a ThinkPad's F7) | lock the screen, as `$mod+Ctrl+l` does |
 | volume, mute, mic mute, brightness keys | work while locked |
 | Caps Lock | acts as Escape (Shift+Caps Lock is the real one) |
+
+The power menu also takes an action, for a key bound to one thing: `power-menu reboot` skips the list
+and asks for the confirmation in the menu, by keyboard (Enter alone says no); `suspend` and `lock` act
+at once. Its path is `config.bricolage.powerMenu`, for a binding made outside Bricolage.
 
 The lid and the displays have their own rules: see `docs/clamshell.md`.
 

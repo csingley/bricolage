@@ -45,6 +45,8 @@ in
   ];
 
   config = lib.mkIf config.bricolage.enable {
+    bricolage.powerMenu = lib.getExe scripts.powerMenu;
+
     # The Wayland session services (waybar, swayidle, ...) run only under sway, not GNOME.
     wayland.systemd.target = "sway-session.target";
 
@@ -127,6 +129,11 @@ in
           "${mod}+Ctrl+l" = "exec ${tools.loginctl} lock-session";
           "${mod}+Shift+p" = "exec ${lib.getExe scripts.powerMenu}";
           "Print" = "exec ${lib.getExe scripts.screenshot}";
+          # The snipping key some keyboards have (a ThinkPad's F10): the same region screenshot.
+          "XF86SelectiveScreenshot" = "exec ${lib.getExe scripts.screenshot}";
+          # The display key (a ThinkPad's F7) switches projector modes elsewhere; sway has none, so it
+          # locks at once, like $mod+Ctrl+l. Nothing asks for confirmation: only unlocking takes a PIN.
+          "XF86Display" = "exec ${tools.loginctl} lock-session";
 
           "--locked XF86AudioRaiseVolume" = "exec ${tools.wpctl} set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ 5%+";
           "--locked XF86AudioLowerVolume" = "exec ${tools.wpctl} set-volume @DEFAULT_AUDIO_SINK@ 5%-";
