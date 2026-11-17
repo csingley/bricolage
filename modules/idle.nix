@@ -42,7 +42,10 @@ in
       };
       events = {
         inherit lock;
-        before-sleep = lock;
+        before-sleep = "${lock} before-sleep";
+        # gtklock can crash as the machine goes to sleep, leaving sway locked and red; lock again.
+        # With the clamshell policy, clamshell.nix runs this first and then its own reconcile.
+        after-resume = lib.mkIf (!config.bricolage.clamshell.enable) "${lock} after-resume";
       };
     };
   };

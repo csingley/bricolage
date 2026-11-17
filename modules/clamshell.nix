@@ -36,6 +36,9 @@ in
       Install.WantedBy = [ "sway-session.target" ];
     };
 
-    services.swayidle.events.after-resume = "${clamshell} reconcile";
+    # The re-lock first: reconcile keeps the panel on while a lock is up, so it should see the one
+    # that is there after a crash (idle.nix, scripts/lock.sh). `;` so the reconcile runs even if the
+    # re-lock gives up.
+    services.swayidle.events.after-resume = "${lib.getExe scripts.lock} after-resume; ${clamshell} reconcile";
   };
 }
