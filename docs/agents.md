@@ -67,6 +67,10 @@ order above, and a waiting job calls for action instead of counting as idle. Onc
 in a terminal it has a window, and the next click raises that. The id comes from the agent, so only
 letters, digits, `_` and `-` are put in the command.
 
+The job need not be one of the agent's own, or run on this machine: a tracker may report any background job with an id and no process
+here (gnosis takes `GNOSIS_JOB` and `GNOSIS_DETACHED` from a reporter), and the click then runs `attachCommand` for it the same way. A command
+that serves more than one kind of job can look the id up and choose, as a wrapper script does that reviews jobs it knows and attaches the rest.
+
 ## Requires
 
 `swaymsg` from the distro, as for the rest of the bar.
