@@ -36,6 +36,7 @@ One JSON object, version 1. A line a time from `watchCommand`, and one object fr
 | `sessions[].label`, `agent`, `detail` | The tooltip. Whatever they hold is cleaned and escaped. |
 | `sessions[].ageMs` | The time the session entered its state, and which of two waits is older. |
 | `sessions[].detached` | Marks a background job in the tooltip. |
+| `sessions[].entrypoint`, `sessions[].hostSession` | What started the agent and the id its application knows the session by, for `openCommands`. Used only when `openCommands` has a command for the entrypoint, and only when both are letters, digits, `_` and `-`. |
 | `sessions[].job` | The job's id, for `attachCommand`. Used only with `detached`, and only when it is letters, digits, `_` and `-`. |
 
 Unknown fields are ignored.
@@ -78,6 +79,12 @@ letters, digits, `_` and `-` are put in the command.
 The job need not be one of the agent's own, or run on this machine: a tracker may report any background job with an id and no process
 here (gnosis takes `GNOSIS_JOB` and `GNOSIS_DETACHED` from a reporter), and the click then runs `attachCommand` for it the same way. A command
 that serves more than one kind of job can look the id up and choose, as a wrapper script does that reviews jobs it knows and attaches the rest.
+
+With `openCommands` set (for example `{ claude-desktop = "xdg-open 'claude://code/continue?session={session}'"; }`), a session an
+application hosts, such as one the Claude Desktop app runs, is answered by the command for its `entrypoint`, with `{session}` replaced by
+its `hostSession`, and not by a window: the application has one window for all its sessions, so raising it would not show the one chosen.
+Such a session counts as answerable, so a waiting one calls for action. It comes before a window in the order above, and an entrypoint
+with no command is treated as any session is. The id comes from the agent, so only letters, digits, `_` and `-` are put in the command.
 
 ## Requires
 

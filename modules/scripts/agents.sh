@@ -11,6 +11,11 @@
 #   AGENTS_JQ     the jq program that formats a view for the bar
 #   AGENTS_ATTACH optional: a command that brings a background job up in a terminal, with {job} in
 #                 place of the job's id (the view's sessions[].job)
+#   AGENTS_OPEN   optional: a JSON object of commands, by what started the agent (the view's
+#                 sessions[].entrypoint, such as "claude-desktop"), that bring one of its sessions up in
+#                 the application that hosts it, with {session} in place of the session's id
+#                 (sessions[].hostSession). Such a session is answered by its command and not by a window,
+#                 since the application's one window holds them all.
 # And for tests: AGENTS_PROC (default /proc), AGENTS_SWAYMSG (default /usr/bin/swaymsg) and
 # AGENTS_MENU (default menu: Bricolage's dmenu-style menu, choices on stdin, the chosen line out).
 #
@@ -18,6 +23,11 @@
 # parents that owns a window. A terminal's window holds the shell and what the shell runs. A
 # background job no terminal is attached to can be answered too, if AGENTS_ATTACH can bring it up.
 attach=${AGENTS_ATTACH:-}
+open=${AGENTS_OPEN:-}
+[ -n "$open" ] || open='{}'
+# A session the open commands can bring up: its entrypoint has one, and both words that go into it are plain tokens. The ids come from the
+# agent, so nothing else is put in a command.
+openable='def openable($open): ((.entrypoint // "") | test("^[A-Za-z0-9_-]+$")) and ((.hostSession // "") | test("^[A-Za-z0-9_-]+$")) and (($open[.entrypoint] // "") != "");'
 #
 # Requires (outside Nix):
 #   distro sway - swaymsg
@@ -70,8 +80,8 @@ bar() {
   local view waiting pids stranded win pid
   bash -c "$AGENTS_WATCH" | while IFS= read -r view; do
     stranded='[]'
-    pids=$(jq -r --arg attach "$attach" '.sessions[]?
-      | select(.state == "waiting" and .key.process and ($attach == "" or (.job // "") == ""))
+    pids=$(jq -r --arg attach "$attach" --argjson open "$open" "$openable"'.sessions[]?
+      | select(.state == "waiting" and .key.process and ($attach == "" or (.job // "") == "") and (openable($open) | not))
       | .key.process.pid' <<<"$view" 2>/dev/null) || pids=
     if [ -n "$pids" ] && win=$(windows) && [ -n "$win" ]; then
       waiting=()
@@ -94,6 +104,14 @@ attach_job() {
   setsid -f bash -c "${attach//\{job\}/$1}" >/dev/null 2>&1 </dev/null 9>&-
 }
 
+# open_session ENTRYPOINT/SESSION: bring a hosted session up with the command for its entrypoint, in a process of its own. Both words were
+# checked by openable.
+open_session() {
+  local entry=${1%%/*} id=${1#*/} cmd
+  cmd=$(jq -r --arg e "$entry" '.[$e] // empty' <<<"$open") && [ -n "$cmd" ] || return 1
+  setsid -f bash -c "${cmd//\{session\}/$id}" >/dev/null 2>&1 </dev/null 9>&-
+}
+
 # focus: bring up the most urgent session that can be answered: one that is waiting, then running,
 # then idle, and within a state the one that has been in it longest. A session with a window has it
 # raised; a background job is attached, when there is a command for it.
@@ -107,14 +125,18 @@ focus() {
   while IFS=$'\t' read -r kind who; do
     if [ "$kind" = job ]; then
       attach_job "$who" && return 0
+    elif [ "$kind" = open ]; then
+      open_session "$who" && return 0
     elif id=$(window_of "$who" "$win"); then
       exec "$swaymsg" "[con_id=$id] focus"
     fi
-  done < <(jq -r --arg attach "$attach" '
+  done < <(jq -r --arg attach "$attach" --argjson open "$open" "$openable"'
     [.sessions[]? | select(.key.process) | {pid: .key.process.pid, age: (.ageMs // 0),
       job: (if $attach != "" and .detached and (.job // "") != "" then .job else null end),
+      open: (if openable($open) then "\(.entrypoint)/\(.hostSession)" else null end),
       r: ({"waiting": 0, "running": 1, "idle": 2}[.state] // 3)}]
-    | sort_by([.r, -.age]) | .[] | if .job then "job\t\(.job)" else "pid\t\(.pid)" end' <<<"$view")
+    | sort_by([.r, -.age]) | .[]
+    | if .job then "job\t\(.job)" elif .open then "open\t\(.open)" else "pid\t\(.pid)" end' <<<"$view")
   echo "agents: no session has a window" >&2
   return 1
 }
@@ -144,7 +166,7 @@ pick() {
     kinds+=("$kind")
     whos+=("$who")
     lines+=("$text")
-  done < <(jq -r --arg attach "$attach" '
+  done < <(jq -r --arg attach "$attach" --argjson open "$open" "$openable"'
     def clean: gsub("[[:cntrl:]\\p{Zl}\\p{Zp}]"; " ") | gsub("\\p{Cf}"; "");
     def safe(n): tostring | clean | if length > n then .[0:n] + "…" else . end;
     def since:
@@ -154,6 +176,7 @@ pick() {
     [.sessions[]? | {
       pid: .key.process.pid,
       job: (if $attach != "" and .detached and ((.job // "") | test("^[A-Za-z0-9_-]+$")) then .job else null end),
+      open: (if openable($open) then "\(.entrypoint)/\(.hostSession)" else null end),
       r: ({"waiting": 0, "running": 1, "idle": 2}[.state] // 3), age: (.ageMs // 0),
       text: ("\(.state // "?" | safe(10) | . + "        " | .[0:8]) "
         + (if (.label // "") != "" then .label | safe(40)
@@ -162,7 +185,7 @@ pick() {
         + " · since \(.ageMs // 0 | since)"
         + (if (.detail // "") != "" then " · " + (.detail | safe(60)) else "" end))
     }] | sort_by([.r, -.age]) | .[]
-    | [if .job then "job", .job elif .pid then "pid", (.pid | tostring) else "none", "-" end, .text]
+    | [if .job then "job", .job elif .open then "open", .open elif .pid then "pid", (.pid | tostring) else "none", "-" end, .text]
     | join("\t")' <<<"$view")
   for text in "${rest[@]}"; do
     kinds+=(none)
@@ -180,6 +203,7 @@ pick() {
   i=$((n - 1))
   case ${kinds[i]} in
   job) attach_job "${whos[i]}" ;;
+  open) open_session "${whos[i]}" ;;
   pid) id=$(window_of "${whos[i]}" "$win") && exec "$swaymsg" "[con_id=$id] focus" ;;
   esac
   return 0

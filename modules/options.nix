@@ -313,6 +313,18 @@ in
           passed over. The id is put in only when it is letters, digits, `_` and `-`.
         '';
       };
+      openCommands = lib.mkOption {
+        type = lib.types.attrsOf lib.types.str;
+        default = { };
+        example = lib.literalExpression ''{ claude-desktop = "xdg-open 'claude://code/continue?session={session}'"; }'';
+        description = ''
+          Commands that bring up a session hosted by an application, by what started the agent (the
+          view's `sessions[].entrypoint`), with `{session}` in place of the id the application knows
+          the session by (`sessions[].hostSession`). With one, a click opens that session in the
+          application, which one window holds for all its sessions, and the session counts as answerable
+          without a window of its own. The id is put in only when it is letters, digits, `_` and `-`.
+        '';
+      };
     };
 
     polkitAgent = lib.mkOption {

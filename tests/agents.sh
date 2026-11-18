@@ -239,6 +239,51 @@ view >p3
 pick p3 "no agent sessions"
 grep -qx 'no agent sessions' menu.in && [ ! -s focus.log ] || fail "no sessions: $(cat menu.in)"
 
+# A session an application hosts is brought up by the command for its entrypoint, with its id in place of {session}, and not by a window:
+# the application's one window holds every session it hosts. Both words go into a command, so only plain tokens do.
+hosted() { # PID STATE AGEMS ENTRYPOINT SESSION
+  printf '{"key":{"process":{"pid":%s,"startTime":1}},"agent":"claude","state":"%s","ageMs":%s,"entrypoint":"%s","hostSession":"%s"}' "$1" "$2" "$3" "$4" "$5"
+}
+OPEN='{"claude-desktop":"echo {session} >>open.log"}'
+opened() { # VIEW: run focus with an open command that logs its argument, and wait for the log
+  : >open.log
+  local status=0
+  AGENTS_OPEN=$OPEN focus "$1" || status=$?
+  for _ in $(seq 50); do [ -s open.log ] && break; sleep 0.1; done
+  return "$status"
+}
+: >focus.log
+view "$(hosted 2000 waiting 5 claude-desktop local_05ed-31),$(sess 1000 idle 1)" >h1
+opened h1
+[ "$(cat open.log)" = local_05ed-31 ] || fail "a waiting hosted session should be opened before an idle window: $(cat open.log)"
+[ ! -s focus.log ] || fail "a window was raised as well: $(cat focus.log)"
+# A hosted session whose process has a window is still opened by its command: the window is the application's.
+view "$(hosted 1000 idle 5 claude-desktop local_9)" >h2
+opened h2
+[ "$(cat open.log)" = local_9 ] && [ ! -s focus.log ] || fail "a hosted session in a window: $(cat open.log) $(cat focus.log)"
+# An entrypoint with no command, an unsafe id, and no commands at all leave it to the window, or to nothing.
+view "$(hosted 2000 waiting 5 cli local_1)" >h3
+if opened h3 2>err; then fail "an entrypoint with no command was opened"; fi
+[ ! -s open.log ] || fail "opened with no command for the entrypoint: $(cat open.log)"
+view "$(hosted 2000 waiting 5 claude-desktop 'x; touch pwned')" >h4
+if opened h4 2>err; then fail "an unsafe session id was accepted"; fi
+[ ! -e pwned ] && [ ! -s open.log ] || fail "an unsafe session id reached the command"
+: >open.log
+view "$(hosted 2000 waiting 5 claude-desktop local_1)" >h6
+if focus h6 2>err; then fail "a hosted session was opened with no open commands"; fi
+[ ! -s open.log ] || fail "opened with no open commands"
+# It counts as answerable in the bar without a window, and not when nothing can open it.
+[ "$(AGENTS_OPEN=$OPEN bar h1 | jq -r .class)" = waiting ] || fail "a hosted session that can be opened is answerable"
+[ "$(bar h6 | jq -r .class)" = idle ] || fail "a hosted session nothing can open is not"
+# The menu lists it, and choosing it runs its command.
+: >open.log
+view "$(hosted 2000 waiting 5 claude-desktop local_7 )" >h5
+ANSWER="1  x" AGENTS_LOCK=$t/pick.lock AGENTS_MENU=$t/menu AGENTS_OPEN=$OPEN AGENTS_LIST="cat h5" \
+  bash -o errexit -o nounset -o pipefail "$sh" pick
+for _ in $(seq 50); do [ -s open.log ] && break; sleep 0.1; done
+[ "$(cat open.log)" = local_7 ] || fail "choosing a hosted session: $(cat open.log)"
+! grep -q 'no window' menu.in || fail "a hosted session was listed as having no window: $(cat menu.in)"
+
 # A process table that loops or runs out ends the search.
 proc 40 41
 proc 41 40

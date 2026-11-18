@@ -53,6 +53,7 @@ let
       export AGENTS_WATCH=${lib.escapeShellArg cfg.bar.agents.watchCommand}
       export AGENTS_LIST=${lib.escapeShellArg cfg.bar.agents.listCommand}
       export AGENTS_ATTACH=${lib.escapeShellArg cfg.bar.agents.attachCommand}
+      export AGENTS_OPEN=${lib.escapeShellArg (builtins.toJSON cfg.bar.agents.openCommands)}
       export AGENTS_JQ=${../scripts/agents.jq}
       exec ${scripts.agents}/bin/agents ${mode}
     ''}";
