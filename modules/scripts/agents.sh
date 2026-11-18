@@ -27,6 +27,7 @@ open=${AGENTS_OPEN:-}
 [ -n "$open" ] || open='{}'
 # A session the open commands can bring up: its entrypoint has one, and both words that go into it are plain tokens. The ids come from the
 # agent, so nothing else is put in a command.
+# shellcheck disable=SC2016 # a jq program, which jq expands, not the shell
 openable='def openable($open): ((.entrypoint // "") | test("^[A-Za-z0-9_-]+$")) and ((.hostSession // "") | test("^[A-Za-z0-9_-]+$")) and (($open[.entrypoint] // "") != "");'
 #
 # Requires (outside Nix):
