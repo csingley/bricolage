@@ -165,7 +165,10 @@
             let
               agents = pkgs.writeShellApplication {
                 name = "agents";
-                runtimeInputs = [ pkgs.jq ];
+                runtimeInputs = [
+                  pkgs.jq
+                  pkgs.util-linux
+                ];
                 text = builtins.readFile ./modules/scripts/agents.sh;
               };
             in
