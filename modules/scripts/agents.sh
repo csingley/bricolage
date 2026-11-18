@@ -24,6 +24,9 @@ attach=${AGENTS_ATTACH:-}
 proc=${AGENTS_PROC:-/proc}
 swaymsg=${AGENTS_SWAYMSG:-/usr/bin/swaymsg}
 menu=${AGENTS_MENU:-menu}
+# The agents menu's window, and the lock its picker holds while the menu is up.
+menu_app=agents-menu
+lock=${AGENTS_LOCK:-${XDG_RUNTIME_DIR:-/tmp}/bricolage-agents-pick.lock}
 max_ancestors=64
 
 # parent PID: the parent of a process, from its stat line; the name in it may hold anything.
@@ -87,7 +90,8 @@ bar() {
 # only a plain token goes into a command.
 attach_job() {
   [[ $1 =~ ^[A-Za-z0-9_-]+$ ]] || return 1
-  setsid -f bash -c "${attach//\{job\}/$1}" >/dev/null 2>&1 </dev/null
+  # Not with the picker's lock (fd 9): a terminal that outlived the menu would hold it.
+  setsid -f bash -c "${attach//\{job\}/$1}" >/dev/null 2>&1 </dev/null 9>&-
 }
 
 # focus: bring up the most urgent session that can be answered: one that is waiting, then running,
@@ -119,9 +123,17 @@ focus() {
 # since when, and what it is doing. The number is how the chosen line is found again, since the rest
 # is agent-written text; that text is cleaned of control and format characters and clipped. A session
 # that cannot be answered is listed, marked, and choosing it does nothing.
+#
+# It is a toggle, with one menu at most: the picker holds a lock while its menu is up, and a second
+# one that finds the lock taken closes that menu's window instead of opening another.
 pick() {
   local view win kind who text n i choice id
   local -a kinds=() whos=() lines=() rest=()
+  exec 9>"$lock"
+  if ! flock -n 9; then
+    "$swaymsg" "[app_id=\"$menu_app\"] kill" >/dev/null 2>&1 || true
+    return 0
+  fi
   view=$(bash -c "$AGENTS_LIST") || return 1
   win=$(windows) || win=
   while IFS=$'\t' read -r kind who text; do
@@ -158,11 +170,11 @@ pick() {
     lines+=("$text")
   done
   if [ ${#lines[@]} -eq 0 ]; then
-    echo "no agent sessions" | "$menu" -p "agents:" >/dev/null
+    echo "no agent sessions" | "$menu" --app-id "$menu_app" -p "agents:" >/dev/null
     return 0
   fi
   choice=$(for i in "${!lines[@]}"; do printf '%d  %s\n' $((i + 1)) "${lines[i]}"; done |
-    "$menu" -p "agents:") || return 0
+    "$menu" --app-id "$menu_app" -p "agents:") || return 0
   n=${choice%% *}
   [[ $n =~ ^[0-9]+$ ]] && ((n >= 1 && n <= ${#lines[@]})) || return 0
   i=$((n - 1))

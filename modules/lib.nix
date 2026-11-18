@@ -29,7 +29,8 @@ let
   # The menu: the one dmenu-style program, used by the launcher and the power menu. Choices on stdin,
   # the chosen line on stdout; `-p PROMPT` sets the prompt. It is fzf in a small floating foot window,
   # with the theme's fzf options; text that matches nothing comes back as typed (the launcher runs it
-  # as a command), and Escape returns nothing.
+  # as a command), and Escape returns nothing. `--app-id ID` names the window (default `launcher`),
+  # so a caller can find its own menu again; sway floats both names (default.nix).
   c = colors;
   # Runs inside the foot window: the list from $1 through fzf, the answer to $2, the prompt $3. The
   # sway session has no home-manager session variables, so it sources them for the theme's fzf options.
@@ -47,12 +48,18 @@ let
       "${terminal.bin} --app-id=${appId} ${extra} -e ${cmd}";
   };
   menu = pkgs.writeShellScriptBin "menu" ''
-    prompt='# '
-    if [ "$1" = -p ]; then prompt="$2 "; fi
+    prompt='# ' app=launcher
+    while [ $# -gt 0 ]; do
+      case $1 in
+        -p) prompt="$2 "; shift 2 ;;
+        --app-id) app=$2; shift 2 ;;
+        *) shift ;;
+      esac
+    done
     tmp=$(mktemp -d)
     trap 'rm -rf "$tmp"' EXIT
     cat >"$tmp/in"
-    ${terminal.run "launcher" menuFzf ""} "$tmp/in" "$tmp/out" "$prompt"
+    ${terminal.bin} --app-id="$app" -e ${menuFzf} "$tmp/in" "$tmp/out" "$prompt"
     tail -n 1 "$tmp/out"
   '';
   # htop has no theme files: it draws with the terminal's ANSI colors. The window prints the theme's

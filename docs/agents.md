@@ -61,7 +61,7 @@ a sway window. If sway cannot be asked, or a session's key is not a process, not
 A click, or the `agentsPick` key (`XF86Assistant` by default), opens a menu of the sessions in
 Bricolage's menu window, the one the power menu's key uses: one line each, with its state, its name,
 since when, and what it is doing. Choose one with the keyboard or the mouse and its window is raised;
-Escape closes the menu. The order is that of urgency below, and sessions that cannot be answered come
+Escape closes the menu, and so does the click or the key again: there is one agents menu at most. The order is that of urgency below, and sessions that cannot be answered come
 last, marked "(no window)"; choosing one does nothing. The lines are numbered, and the number is what
 picks the session, since the rest is the agent's own text (cleaned and clipped as in the tooltip).
 

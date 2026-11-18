@@ -177,7 +177,8 @@ in
             command = "floating enable, resize set width 1280 px height 800 px, move position center";
           }
           {
-            criteria.app_id = "^launcher$";
+            # the menu (lib.nix): the launcher's and the agent sessions'
+            criteria.app_id = "^(launcher|agents-menu)$";
             command = "floating enable, resize set width 640 px height 420 px, move position center";
           }
         ];

@@ -180,7 +180,7 @@ if attach j3 2>err; then fail "an unsafe job id was accepted"; fi
 # keeps what it was shown and answers with $ANSWER (a line, or nothing for Escape).
 cat >menu <<'SH'
 #!/bin/sh
-[ "$1" = -p ] && [ "$2" = agents: ] || echo "bad prompt: $*" >>menu.err
+[ "$*" = "--app-id agents-menu -p agents:" ] || echo "bad arguments: $*" >>menu.err
 cat >menu.in
 printf '%s\n' "$ANSWER"
 SH
@@ -188,7 +188,7 @@ chmod +x menu
 pick() { # VIEW ANSWER
   : >focus.log
   : >attach.log
-  ANSWER=$2 AGENTS_MENU=$t/menu AGENTS_ATTACH='echo {job} >>attach.log' AGENTS_LIST="cat $1" \
+  ANSWER=$2 AGENTS_LOCK=$t/pick.lock AGENTS_MENU=$t/menu AGENTS_ATTACH='echo {job} >>attach.log' AGENTS_LIST="cat $1" \
     bash -o errexit -o nounset -o pipefail "$sh" pick
 }
 view "$(sess 2000 waiting 9000 stranded),$(sess 3000 idle 5),$(sess 1000 waiting 1 front),$(job 4000 running 7 abc_1)" >p1
@@ -216,6 +216,24 @@ view '{"key":{"process":{"pid":1000,"startTime":1}},"state":"idle","ageMs":1,"la
 pick p2 ""
 [ "$(wc -l <menu.in)" = 1 ] || fail "an agent's text split a line: $(cat menu.in)"
 if grep -q $'‮\|\t' menu.in; then fail "format or tab characters reached the menu"; fi
+# A toggle: while a menu is up (its picker holds the lock), another pick closes that window and
+# opens none.
+rm -f menu.in
+flock pick.lock sleep 1 &
+holder=$!
+sleep 0.3
+pick p1 "$(printf '1  x')"
+[ "$(cat focus.log)" = '[app_id="agents-menu"] kill' ] || fail "a second pick should close the menu: $(cat focus.log)"
+[ ! -e menu.in ] || fail "a second menu was opened"
+wait "$holder"
+# A job's terminal, which outlives the menu, does not keep the lock: the next pick opens the menu.
+view "$(job 4000 running 7 abc_1)" >p4
+ANSWER="1  x" AGENTS_LOCK=$t/pick.lock AGENTS_MENU=$t/menu AGENTS_ATTACH='sleep 3' AGENTS_LIST="cat p4" \
+  bash -o errexit -o nounset -o pipefail "$sh" pick
+: >focus.log
+pick p4 ""
+[ -e menu.in ] && [ ! -s focus.log ] || fail "an attached job's terminal kept the lock: $(cat focus.log)"
+
 # No sessions: the menu says so, and nothing is done.
 view >p3
 pick p3 "no agent sessions"
