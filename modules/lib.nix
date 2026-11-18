@@ -91,6 +91,7 @@ in
     agents = script "agents" [
       pkgs.jq
       pkgs.util-linux
+      menu
     ];
     lock = script "lock" [ ];
     suspendOnBattery = script "suspend-on-battery" [ ];

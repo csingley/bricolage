@@ -34,7 +34,8 @@ in
         brightnessUp = [ "XF86MonBrightnessUp" ];
         brightnessDown = [ "XF86MonBrightnessDown" ];
         screenshot = [ "Print" ];
-        agentsFocus = [ "XF86Assistant" ];
+        agentsPick = [ "XF86Assistant" ];
+        agentsFocus = [ ];
       };
       description = "The keys always bound to an action, besides those in `keys`.";
     };
@@ -74,7 +75,8 @@ in
             poweroff = action "Power off, after a confirmation in the menu (no, yes: Enter alone cancels).";
             powerMenu = action "Open the power menu: lock, suspend, log out, reboot, power off.";
             screenshot = action "Select a region and copy it as an image.";
-            agentsFocus = action "Raise the window of the agent session that most needs you (or attach a job). Only with `bricolage.bar.agents.enable`.";
+            agentsPick = action "Open the menu of agent sessions, the one that most needs you first; the one chosen is raised (or its job attached). Only with `bricolage.bar.agents.enable`.";
+            agentsFocus = action "Raise the window of the agent session that most needs you (or attach a job), with no menu. Only with `bricolage.bar.agents.enable`.";
           };
         };
       };
@@ -241,6 +243,11 @@ in
               default = null;
               example = lib.literalExpression ''"''${pkgs.sway}/bin/swaymsg [app_id=foot] focus"'';
               description = "A command to run when the widget is clicked, such as one that brings the source's work to the front. None by default.";
+            };
+            onClickRight = lib.mkOption {
+              type = lib.types.nullOr lib.types.str;
+              default = null;
+              description = "A command to run when the widget is right-clicked. None by default.";
             };
             format = lib.mkOption {
               type = lib.types.nullOr lib.types.str;

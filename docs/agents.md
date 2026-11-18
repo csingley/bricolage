@@ -1,7 +1,7 @@
 # The agent-sessions widget
 
-`bricolage.bar.agents` shows the state of coding-agent sessions in the bar's task pill and raises
-the window of the one that needs you when it is clicked. It does not track sessions itself. It
+`bricolage.bar.agents` shows the state of coding-agent sessions in the bar's task pill. A click opens
+a menu of the sessions, and a right-click raises the window of the one that needs you. It does not track sessions itself. It
 reads a **view** from two commands, so it works with any tracker that prints one:
 
 ```nix
@@ -58,13 +58,21 @@ background job with no terminal, counts as idle instead, and its tooltip line sa
 window to answer it in. A session is held by a window when the process, or one of its parents, owns
 a sway window. If sway cannot be asked, or a session's key is not a process, nothing is demoted.
 
-A click raises the window of the most urgent session that has one: waiting, then running, then
-idle, and within a state the one that has waited longest.
+A click, or the `agentsPick` key (`XF86Assistant` by default), opens a menu of the sessions in
+Bricolage's menu window, the one the power menu's key uses: one line each, with its state, its name,
+since when, and what it is doing. Choose one with the keyboard or the mouse and its window is raised;
+Escape closes the menu. The order is that of urgency below, and sessions that cannot be answered come
+last, marked "(no window)"; choosing one does nothing. The lines are numbered, and the number is what
+picks the session, since the rest is the agent's own text (cleaned and clipped as in the tooltip).
+
+A right-click, or the `agentsFocus` key (none by default), skips the menu and raises the window of the
+most urgent session that has one: waiting, then running, then idle, and within a state the one that
+has waited longest.
 
 With `attachCommand` set (for example `"foot claude attach {job}"`), a background job counts as a
-session that can be answered: the click runs the command with `{job}` replaced by the job's id, in the
+session that can be answered: choosing it, or the right-click, runs the command with `{job}` replaced by the job's id, in the
 order above, and a waiting job calls for action instead of counting as idle. Once the job is attached
-in a terminal it has a window, and the next click raises that. The id comes from the agent, so only
+in a terminal it has a window, and choosing it again raises that. The id comes from the agent, so only
 letters, digits, `_` and `-` are put in the command.
 
 The job need not be one of the agent's own, or run on this machine: a tracker may report any background job with an id and no process

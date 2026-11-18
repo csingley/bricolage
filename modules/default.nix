@@ -32,7 +32,7 @@ let
   '';
 
   # The keys option (options.nix) to sway bindings: each action's command, on each of its keys. The
-  # audio and brightness keys also work while locked. agentsFocus is bound by the waybar module, which
+  # audio and brightness keys also work while locked. agentsPick and agentsFocus are bound by the waybar module, which
   # has the agents command.
   powerMenu = lib.getExe scripts.powerMenu;
   actions = {

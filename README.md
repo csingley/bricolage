@@ -63,7 +63,8 @@ machine is configured, not here. What you set is added to the default keys, whic
 | `micVolumeUp`, `micVolumeDown` | the microphone's level (also while locked) | none |
 | `brightnessUp`, `brightnessDown` | the screen (also while locked) | `XF86MonBrightnessUp`, `XF86MonBrightnessDown` |
 | `screenshot` | select a region and copy it as an image | `Print` |
-| `agentsFocus` | raise the agent session that needs you (with `bar.agents`) | `XF86Assistant` |
+| `agentsPick` | the menu of agent sessions, most urgent first (with `bar.agents`) | `XF86Assistant` |
+| `agentsFocus` | raise the agent session that needs you, with no menu (with `bar.agents`) | none |
 | `lock`, `suspend`, `logout`, `reboot`, `poweroff`, `powerMenu` | the power actions | none |
 
 Caps Lock acts as Escape (Shift+Caps Lock is the real one).
@@ -148,7 +149,7 @@ theme.
 | `bricolage.clamshell.enable` | the internal panel is off while the lid is closed and another display is active ([docs/clamshell.md](docs/clamshell.md)); works with or without a layout tool |
 | `bricolage.bar.workspaces.{pinned,buttonMinWidth}` | always-shown workspaces and the button width |
 | `bricolage.bar.widgets.<name>` | one switch per widget; `temperature` is the sensor's hwmon path or null |
-| `bricolage.bar.tasks.<name>.{enable,command,onClick,format}` | a source of tasks (agent sessions, builds, a pane's bell): a command that prints waybar JSON whose `class` is `none`, `idle`, `running`, `waiting` or `down`; one pill, left of the other widgets. `format` is a waybar format string for it (`{text}` is what the command reports), for the same glyphs and right-aligned fields as the other widgets |
+| `bricolage.bar.tasks.<name>.{enable,command,onClick,onClickRight,format}` | a source of tasks (agent sessions, builds, a pane's bell): a command that prints waybar JSON whose `class` is `none`, `idle`, `running`, `waiting` or `down`; one pill, left of the other widgets. `format` is a waybar format string for it (`{text}` is what the command reports), for the same glyphs and right-aligned fields as the other widgets |
 | `bricolage.bar.agents.{enable,watchCommand,listCommand,attachCommand}` | the agent-sessions widget, a task source named `agents`: it formats a view of the sessions ([docs/agents.md](docs/agents.md)) from the two commands, and a click raises the window of the session that most needs you |
 | `bricolage.polkitAgent` | the path of the distro's polkit agent (it differs between distros) |
 | `bricolage.terminal.shell` | the shell foot starts; null for the login shell |

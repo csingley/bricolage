@@ -1,5 +1,8 @@
 # shellcheck shell=bash
-# agents bar | agents focus: the bar widget for agent sessions, and its click action.
+# agents bar | agents pick | agents focus: the bar widget for agent sessions, and its actions.
+#   bar    the widget's text, now and after each change
+#   pick   a menu of the sessions, most urgent first; the one chosen is raised (or its job attached)
+#   focus  raise the most urgent session that can be answered, with no menu
 #
 # Both read a view of the sessions (version 1: sessions with a key, state, label, age and so on)
 # from a command, so they work with any source that prints one.
@@ -8,7 +11,8 @@
 #   AGENTS_JQ     the jq program that formats a view for the bar
 #   AGENTS_ATTACH optional: a command that brings a background job up in a terminal, with {job} in
 #                 place of the job's id (the view's sessions[].job)
-# And for tests: AGENTS_PROC (default /proc) and AGENTS_SWAYMSG (default /usr/bin/swaymsg).
+# And for tests: AGENTS_PROC (default /proc), AGENTS_SWAYMSG (default /usr/bin/swaymsg) and
+# AGENTS_MENU (default menu: Bricolage's dmenu-style menu, choices on stdin, the chosen line out).
 #
 # A session can be answered if a window holds its process: the nearest of the process and its
 # parents that owns a window. A terminal's window holds the shell and what the shell runs. A
@@ -19,6 +23,7 @@ attach=${AGENTS_ATTACH:-}
 #   distro sway - swaymsg
 proc=${AGENTS_PROC:-/proc}
 swaymsg=${AGENTS_SWAYMSG:-/usr/bin/swaymsg}
+menu=${AGENTS_MENU:-menu}
 max_ancestors=64
 
 # parent PID: the parent of a process, from its stat line; the name in it may hold anything.
@@ -110,11 +115,70 @@ focus() {
   return 1
 }
 
+# pick: a menu of every session, in focus's order with those that cannot be answered last, one line each: a number, the state, the name and
+# since when, and what it is doing. The number is how the chosen line is found again, since the rest
+# is agent-written text; that text is cleaned of control and format characters and clipped. A session
+# that cannot be answered is listed, marked, and choosing it does nothing.
+pick() {
+  local view win kind who text n i choice id
+  local -a kinds=() whos=() lines=() rest=()
+  view=$(bash -c "$AGENTS_LIST") || return 1
+  win=$(windows) || win=
+  while IFS=$'\t' read -r kind who text; do
+    if [ "$kind" = none ] || { [ "$kind" = pid ] && ! { [ -n "$win" ] && window_of "$who" "$win" >/dev/null; }; }; then
+      rest+=("$text  (no window)")
+      continue
+    fi
+    kinds+=("$kind")
+    whos+=("$who")
+    lines+=("$text")
+  done < <(jq -r --arg attach "$attach" '
+    def clean: gsub("[[:cntrl:]\\p{Zl}\\p{Zp}]"; " ") | gsub("\\p{Cf}"; "");
+    def safe(n): tostring | clean | if length > n then .[0:n] + "…" else . end;
+    def since:
+      (now - (. / 1000)) as $t
+      | if ($t | strflocaltime("%F")) == (now | strflocaltime("%F"))
+        then $t | strflocaltime("%H:%M") else $t | strflocaltime("%a %H:%M") end;
+    [.sessions[]? | {
+      pid: .key.process.pid,
+      job: (if $attach != "" and .detached and ((.job // "") | test("^[A-Za-z0-9_-]+$")) then .job else null end),
+      r: ({"waiting": 0, "running": 1, "idle": 2}[.state] // 3), age: (.ageMs // 0),
+      text: ("\(.state // "?" | safe(10) | . + "        " | .[0:8]) "
+        + (if (.label // "") != "" then .label | safe(40)
+           else "\(.agent // "agent" | safe(20)) \(.key.process.pid // "")" end)
+        + (if .detached then " (job)" else "" end)
+        + " · since \(.ageMs // 0 | since)"
+        + (if (.detail // "") != "" then " · " + (.detail | safe(60)) else "" end))
+    }] | sort_by([.r, -.age]) | .[]
+    | [if .job then "job", .job elif .pid then "pid", (.pid | tostring) else "none", "-" end, .text]
+    | join("\t")' <<<"$view")
+  for text in "${rest[@]}"; do
+    kinds+=(none)
+    whos+=(-)
+    lines+=("$text")
+  done
+  if [ ${#lines[@]} -eq 0 ]; then
+    echo "no agent sessions" | "$menu" -p "agents:" >/dev/null
+    return 0
+  fi
+  choice=$(for i in "${!lines[@]}"; do printf '%d  %s\n' $((i + 1)) "${lines[i]}"; done |
+    "$menu" -p "agents:") || return 0
+  n=${choice%% *}
+  [[ $n =~ ^[0-9]+$ ]] && ((n >= 1 && n <= ${#lines[@]})) || return 0
+  i=$((n - 1))
+  case ${kinds[i]} in
+  job) attach_job "${whos[i]}" ;;
+  pid) id=$(window_of "${whos[i]}" "$win") && exec "$swaymsg" "[con_id=$id] focus" ;;
+  esac
+  return 0
+}
+
 case ${1:-} in
 bar) bar ;;
+pick) pick ;;
 focus) focus ;;
 *)
-  echo "usage: agents bar|focus" >&2
+  echo "usage: agents bar|pick|focus" >&2
   exit 2
   ;;
 esac

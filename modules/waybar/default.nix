@@ -43,9 +43,10 @@ let
     inherit (bl) ramp;
   };
 
-  # The agent-sessions widget is a task source: its command formats the view for the bar, and its
-  # click raises the window of the session that most needs you. They are the same script, which
-  # reads the view from the commands the options name.
+  # The agent-sessions widget is a task source: its command formats the view for the bar, its click
+  # opens a menu of the sessions (as the power button's does), and its right-click raises the window
+  # of the session that most needs you. They are the same script, which reads the view from the
+  # commands the options name.
   agentsScript =
     mode:
     "${pkgs.writeShellScript "agents-${mode}" ''
@@ -68,6 +69,7 @@ let
       restart-interval = 5; # a command that ends is started again
     }
     // lib.optionalAttrs (task.onClick != null) { on-click = task.onClick; }
+    // lib.optionalAttrs (task.onClickRight != null) { on-click-right = task.onClickRight; }
     // lib.optionalAttrs (task.format != null) { inherit (task) format; }
   );
 
@@ -100,17 +102,21 @@ let
 in
 {
   config = lib.mkIf config.bricolage.enable {
-    # The agentsFocus keys (options.nix), where the agents command is.
+    # The agentsPick and agentsFocus keys (options.nix), where the agents command is.
     wayland.windowManager.sway.config.keybindings = lib.mkIf cfg.bar.agents.enable (
       lib.mkOptionDefault (
-        lib.genAttrs (cfg.keys.agentsFocus ++ cfg.keyDefaults.agentsFocus) (_: "exec ${agentsScript "focus"}")
+        lib.genAttrs (cfg.keys.agentsPick ++ cfg.keyDefaults.agentsPick) (_: "exec ${agentsScript "pick"}")
+        // lib.genAttrs (cfg.keys.agentsFocus ++ cfg.keyDefaults.agentsFocus) (
+          _: "exec ${agentsScript "focus"}"
+        )
       )
     );
 
     bricolage.bar.tasks.agents = lib.mkIf cfg.bar.agents.enable {
       enable = true;
       command = agentsScript "bar";
-      onClick = agentsScript "focus";
+      onClick = agentsScript "pick";
+      onClickRight = agentsScript "focus";
       # The glyph and a right-aligned field of three, as the battery and the volume have. The robot is an
       # md glyph, wide like theirs, so two spaces follow it. The command reports the count alone.
       format = "${ic.agent}  {text:>3}";

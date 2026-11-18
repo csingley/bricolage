@@ -150,7 +150,10 @@
             expect = ''
               must '"custom/tasks#agents": {' .config/waybar/config
               grep -A4 '"custom/tasks#agents": {' .config/waybar/config | grep -q '"exec": "/nix/store/.*-agents-bar"'
-              grep -A4 '"custom/tasks#agents": {' .config/waybar/config | grep -q '"on-click": "/nix/store/.*-agents-focus"'
+              grep -A4 '"custom/tasks#agents": {' .config/waybar/config | grep -q '"on-click": "/nix/store/.*-agents-pick"'
+              grep -A6 '"custom/tasks#agents": {' .config/waybar/config | grep -q '"on-click-right": "/nix/store/.*-agents-focus"'
+              # the assistant key opens the same menu as the click
+              must 'bindsym XF86Assistant exec /nix/store/.*-agents-pick$' .config/sway/config
               # the glyph and a right-aligned field of three come from the bar's format string, as for the
               # battery and the volume, so the widget keeps one width; the stylesheet sets none
               grep -A6 '"custom/tasks#agents": {' .config/waybar/config | grep -q '"format": ".*  {text:>3}"'

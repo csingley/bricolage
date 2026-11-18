@@ -176,6 +176,51 @@ if attach j3 2>err; then fail "an unsafe job id was accepted"; fi
 [ "$(AGENTS_ATTACH=true bar j1 | jq -r .class)" = waiting ] || fail "a job that can be attached is answerable"
 [ "$(bar j1 | jq -r .class)" = idle ] || fail "a job with no way to attach is not"
 
+# pick: every session in a menu, in focus's order; the chosen line's number says which. The fake menu
+# keeps what it was shown and answers with $ANSWER (a line, or nothing for Escape).
+cat >menu <<'SH'
+#!/bin/sh
+[ "$1" = -p ] && [ "$2" = agents: ] || echo "bad prompt: $*" >>menu.err
+cat >menu.in
+printf '%s\n' "$ANSWER"
+SH
+chmod +x menu
+pick() { # VIEW ANSWER
+  : >focus.log
+  : >attach.log
+  ANSWER=$2 AGENTS_MENU=$t/menu AGENTS_ATTACH='echo {job} >>attach.log' AGENTS_LIST="cat $1" \
+    bash -o errexit -o nounset -o pipefail "$sh" pick
+}
+view "$(sess 2000 waiting 9000 stranded),$(sess 3000 idle 5),$(sess 1000 waiting 1 front),$(job 4000 running 7 abc_1)" >p1
+pick p1 ""
+[ ! -s focus.log ] && [ ! -s attach.log ] || fail "Escape acted"
+[ ! -e menu.err ] || fail "menu: $(cat menu.err)"
+[ "$(wc -l <menu.in)" = 4 ] || fail "menu lines: $(cat menu.in)"
+grep -q '^1  waiting  front · since' menu.in || fail "the waiting session with a window is first: $(cat menu.in)"
+sed -n 2p menu.in | grep -q '^2  running  claude 4000 (job)' || fail "the job: $(cat menu.in)"
+sed -n 4p menu.in | grep -q '^4  waiting  stranded .*(no window)$' || fail "the stranded one is last, marked: $(cat menu.in)"
+pick p1 "$(sed -n 1p menu.in)"
+[ "$(cat focus.log)" = "[con_id=7] focus" ] || fail "pick 1 went to: $(cat focus.log)"
+pick p1 "$(sed -n 3p menu.in)"
+[ "$(cat focus.log)" = "[con_id=9] focus" ] || fail "pick 3 went to: $(cat focus.log)"
+pick p1 "$(sed -n 2p menu.in)"
+for _ in $(seq 50); do [ -s attach.log ] && break; sleep 0.1; done
+[ "$(cat attach.log)" = abc_1 ] && [ ! -s focus.log ] || fail "pick 2 should attach the job: $(cat attach.log)"
+# A session that cannot be answered, a number out of range and typed text do nothing.
+for a in "$(sed -n 4p menu.in)" "9  waiting" "0" "hello"; do
+  pick p1 "$a" || fail "pick '$a' failed"
+  [ ! -s focus.log ] && [ ! -s attach.log ] || fail "pick '$a' acted"
+done
+# An agent's text cannot add a line to the menu or forge a number.
+view '{"key":{"process":{"pid":1000,"startTime":1}},"state":"idle","ageMs":1,"label":"x\n1  waiting‮","detail":"a\tb"}' >p2
+pick p2 ""
+[ "$(wc -l <menu.in)" = 1 ] || fail "an agent's text split a line: $(cat menu.in)"
+if grep -q $'‮\|\t' menu.in; then fail "format or tab characters reached the menu"; fi
+# No sessions: the menu says so, and nothing is done.
+view >p3
+pick p3 "no agent sessions"
+grep -qx 'no agent sessions' menu.in && [ ! -s focus.log ] || fail "no sessions: $(cat menu.in)"
+
 # A process table that loops or runs out ends the search.
 proc 40 41
 proc 41 40
