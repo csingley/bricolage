@@ -100,6 +100,13 @@ let
 in
 {
   config = lib.mkIf config.bricolage.enable {
+    # The agentsFocus keys (options.nix), where the agents command is.
+    wayland.windowManager.sway.config.keybindings = lib.mkIf cfg.bar.agents.enable (
+      lib.mkOptionDefault (
+        lib.genAttrs (cfg.keys.agentsFocus ++ cfg.keyDefaults.agentsFocus) (_: "exec ${agentsScript "focus"}")
+      )
+    );
+
     bricolage.bar.tasks.agents = lib.mkIf cfg.bar.agents.enable {
       enable = true;
       command = agentsScript "bar";

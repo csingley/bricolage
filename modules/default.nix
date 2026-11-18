@@ -30,6 +30,63 @@ let
       --term=${terminal.bin} --no-generic \
       --usage-log="''${XDG_CACHE_HOME:-$HOME/.cache}/j4-dmenu-desktop.usage"
   '';
+
+  # The keys option (options.nix) to sway bindings: each action's command, on each of its keys. The
+  # audio and brightness keys also work while locked. agentsFocus is bound by the waybar module, which
+  # has the agents command.
+  powerMenu = lib.getExe scripts.powerMenu;
+  actions = {
+    mute = {
+      locked = true;
+      cmd = "${tools.wpctl} set-mute @DEFAULT_AUDIO_SINK@ toggle";
+    };
+    volumeUp = {
+      locked = true;
+      cmd = "${tools.wpctl} set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ 5%+";
+    };
+    volumeDown = {
+      locked = true;
+      cmd = "${tools.wpctl} set-volume @DEFAULT_AUDIO_SINK@ 5%-";
+    };
+    micMute = {
+      locked = true;
+      cmd = "${tools.wpctl} set-mute @DEFAULT_AUDIO_SOURCE@ toggle";
+    };
+    micVolumeUp = {
+      locked = true;
+      cmd = "${tools.wpctl} set-volume -l 1.0 @DEFAULT_AUDIO_SOURCE@ 5%+";
+    };
+    micVolumeDown = {
+      locked = true;
+      cmd = "${tools.wpctl} set-volume @DEFAULT_AUDIO_SOURCE@ 5%-";
+    };
+    brightnessUp = {
+      locked = true;
+      cmd = "${tools.brightnessctl} set 5%+";
+    };
+    brightnessDown = {
+      locked = true;
+      cmd = "${tools.brightnessctl} set 5%-";
+    };
+    lock.cmd = "${tools.loginctl} lock-session";
+    suspend.cmd = "${powerMenu} suspend";
+    logout.cmd = "${powerMenu} logout";
+    reboot.cmd = "${powerMenu} reboot";
+    poweroff.cmd = "${powerMenu} poweroff";
+    powerMenu.cmd = powerMenu;
+    screenshot.cmd = lib.getExe scripts.screenshot;
+  };
+  keybindings = lib.listToAttrs (
+    lib.concatLists (
+      lib.mapAttrsToList (
+        name: a:
+        map (key: {
+          name = "${lib.optionalString (a.locked or false) "--locked "}${key}";
+          value = "exec ${a.cmd}";
+        }) (cfg.keys.${name} ++ cfg.keyDefaults.${name} or [ ])
+      ) actions
+    )
+  );
 in
 {
   imports = [
@@ -125,23 +182,7 @@ in
           }
         ];
 
-        keybindings = lib.mkOptionDefault {
-          "${mod}+Ctrl+l" = "exec ${tools.loginctl} lock-session";
-          "${mod}+Shift+p" = "exec ${lib.getExe scripts.powerMenu}";
-          "Print" = "exec ${lib.getExe scripts.screenshot}";
-          # The snipping key some keyboards have (a ThinkPad's F10): the same region screenshot.
-          "XF86SelectiveScreenshot" = "exec ${lib.getExe scripts.screenshot}";
-          # The display key (a ThinkPad's F7) switches projector modes elsewhere; sway has none, so it
-          # locks at once, like $mod+Ctrl+l. Nothing asks for confirmation: only unlocking takes a PIN.
-          "XF86Display" = "exec ${tools.loginctl} lock-session";
-
-          "--locked XF86AudioRaiseVolume" = "exec ${tools.wpctl} set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ 5%+";
-          "--locked XF86AudioLowerVolume" = "exec ${tools.wpctl} set-volume @DEFAULT_AUDIO_SINK@ 5%-";
-          "--locked XF86AudioMicMute" = "exec ${tools.wpctl} set-mute @DEFAULT_AUDIO_SOURCE@ toggle";
-          "--locked XF86AudioMute" = "exec ${tools.wpctl} set-mute @DEFAULT_AUDIO_SINK@ toggle";
-          "--locked XF86MonBrightnessUp" = "exec ${tools.brightnessctl} set 5%+";
-          "--locked XF86MonBrightnessDown" = "exec ${tools.brightnessctl} set 5%-";
-        };
+        keybindings = lib.mkOptionDefault keybindings;
 
         # Lock when the lid closes (logind then suspends; swayidle locks before sleep too). With the
         # clamshell policy the lid handler decides: docked, the panel goes off and nothing locks.

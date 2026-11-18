@@ -46,25 +46,31 @@ idle locking, the battery switches between percent and time, and the power butto
 </p>
 
 `$mod+d` opens the launcher: type to filter the applications, Enter to run, or type any command.
-`$mod+Shift+p` opens the power menu (lock, suspend, log out, reboot, power off) in the same window.
+The power menu (lock, suspend, log out, reboot, power off) opens in the same window, from the bar's power
+button or a key you give it (see Keys).
 
 ### Keys
 
-Bricolage keeps sway's usual keys and adds these:
+Bricolage keeps sway's usual keys, makes `$mod+d` the launcher, and binds the keys any keyboard has.
+The rest you give it: `bricolage.keys.<action>` is a list of sway key names for each action, any number
+of keys, so a machine's own keys (a laptop's display key, a programmable keyboard's) are set where the
+machine is configured, not here. What you set is added to the default keys, which are always bound.
 
-| Key | Action |
-|---|---|
-| `$mod+d` | the launcher |
-| `$mod+Shift+p` | the power menu |
-| `$mod+Ctrl+l` | lock the screen |
-| `Print`, `XF86SelectiveScreenshot` (a ThinkPad's F10) | select a region and copy it as an image |
-| `XF86Display` (a ThinkPad's F7) | lock the screen, as `$mod+Ctrl+l` does |
-| volume, mute, mic mute, brightness keys | work while locked |
-| Caps Lock | acts as Escape (Shift+Caps Lock is the real one) |
+| Action (`bricolage.keys.`) | Does | Default keys |
+|---|---|---|
+| `mute`, `volumeUp`, `volumeDown` | the speakers (also while locked) | `XF86AudioMute`, `XF86AudioRaiseVolume`, `XF86AudioLowerVolume` |
+| `micMute` | the microphone (also while locked) | `XF86AudioMicMute` |
+| `micVolumeUp`, `micVolumeDown` | the microphone's level (also while locked) | none |
+| `brightnessUp`, `brightnessDown` | the screen (also while locked) | `XF86MonBrightnessUp`, `XF86MonBrightnessDown` |
+| `screenshot` | select a region and copy it as an image | `Print` |
+| `agentsFocus` | raise the agent session that needs you (with `bar.agents`) | `XF86Assistant` |
+| `lock`, `suspend`, `logout`, `reboot`, `poweroff`, `powerMenu` | the power actions | none |
 
-The power menu also takes an action, for a key bound to one thing: `power-menu reboot` skips the list
-and asks for the confirmation in the menu, by keyboard (Enter alone says no); `suspend` and `lock` act
-at once. Its path is `config.bricolage.powerMenu`, for a binding made outside Bricolage.
+Caps Lock acts as Escape (Shift+Caps Lock is the real one).
+
+The power actions go through the power menu, which also takes an action as an argument:
+`power-menu reboot` skips the list and asks for the confirmation in the menu, by keyboard (Enter alone says
+no); `suspend` and `lock` act at once. Its path is `config.bricolage.powerMenu`.
 
 The lid and the displays have their own rules: see `docs/clamshell.md`.
 

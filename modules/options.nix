@@ -18,6 +18,67 @@ in
       '';
     };
 
+    # One list of sway keys per action. The built-in keys are the ones any keyboard has, and are always
+    # bound; a machine's own keys (a laptop's display or snipping key, a programmable keyboard's) are
+    # added where the machine is configured, by setting the list. (A list set at the normal priority
+    # replaces an option's default, which is why the built-in keys are not the default.)
+    keyDefaults = lib.mkOption {
+      type = lib.types.attrsOf (lib.types.listOf lib.types.str);
+      readOnly = true;
+      internal = true;
+      default = {
+        mute = [ "XF86AudioMute" ];
+        volumeUp = [ "XF86AudioRaiseVolume" ];
+        volumeDown = [ "XF86AudioLowerVolume" ];
+        micMute = [ "XF86AudioMicMute" ];
+        brightnessUp = [ "XF86MonBrightnessUp" ];
+        brightnessDown = [ "XF86MonBrightnessDown" ];
+        screenshot = [ "Print" ];
+        agentsFocus = [ "XF86Assistant" ];
+      };
+      description = "The keys always bound to an action, besides those in `keys`.";
+    };
+
+    keys =
+      let
+        action =
+          description:
+          lib.mkOption {
+            type = lib.types.listOf lib.types.str;
+            default = [ ];
+            example = [ "XF86Launch5" ];
+            description = description + " Sway key names (`XF86Display`, `Mod4+Shift+p`), any number, besides the built-in keys.";
+          };
+      in
+      lib.mkOption {
+        default = { };
+        description = ''
+          Keys for each of Bricolage's actions, in addition to the built-in ones (see the README). Each is
+          a list of sway key names, any number per action. Volume, mic and brightness work while the
+          screen is locked; the others do not.
+        '';
+        type = lib.types.submodule {
+          options = {
+            mute = action "Mute the speakers.";
+            volumeUp = action "Speaker volume up 5%.";
+            volumeDown = action "Speaker volume down 5%.";
+            micMute = action "Mute the microphone.";
+            micVolumeUp = action "Microphone volume up 5%.";
+            micVolumeDown = action "Microphone volume down 5%.";
+            brightnessUp = action "Screen brightness up 5%.";
+            brightnessDown = action "Screen brightness down 5%.";
+            lock = action "Lock the screen.";
+            suspend = action "Lock, then suspend (the locker is up first).";
+            logout = action "End the sway session, after a confirmation in the menu.";
+            reboot = action "Reboot, after a confirmation in the menu (no, yes: Enter alone cancels).";
+            poweroff = action "Power off, after a confirmation in the menu (no, yes: Enter alone cancels).";
+            powerMenu = action "Open the power menu: lock, suspend, log out, reboot, power off.";
+            screenshot = action "Select a region and copy it as an image.";
+            agentsFocus = action "Raise the window of the agent session that most needs you (or attach a job). Only with `bricolage.bar.agents.enable`.";
+          };
+        };
+      };
+
     colors = lib.mkOption {
       type = lib.types.attrsOf lib.types.str;
       default = bl.defaults;
