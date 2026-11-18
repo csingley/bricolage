@@ -243,6 +243,16 @@ in
     # (`error`); the warning is a surface with a red edge, since it confirms something destructive.
     # There is no `button-border=<color>`: swaynag parses it as a prefix of `--button-border-size` and
     # the hex digits become a huge thickness.
+    # Home Manager reloads a running sway when its config changes, but only with a sway package of its
+    # own; with the distro's (package = null above) it does nothing, and new keys wait for a manual
+    # `swaymsg reload`. This is its reload with the distro's swaymsg, on the same socket it finds.
+    xdg.configFile."sway/config".onChange = ''
+      swaySocket="''${XDG_RUNTIME_DIR:-/run/user/$UID}/sway-ipc.$UID.$(${pkgs.procps}/bin/pgrep --uid $UID -x sway || true).sock"
+      if [ -S "$swaySocket" ]; then
+        ${tools.swaymsg} -s "$swaySocket" reload || true
+      fi
+    '';
+
     xdg.configFile."swaynag/config".text = ''
       font=JetBrainsMono Nerd Font 9
 
